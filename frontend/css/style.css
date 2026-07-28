@@ -279,3 +279,53 @@ body {
   background: var(--color-accent);
   color: #0f172a;
 }
+
+.city-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.favorite-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  line-height: 1;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.favorite-button:hover {
+  transform: scale(1.15);
+}
+
+.favorite-button.is-active {
+  color: #fbbf24;
+}
+
+.favorite-searches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: var(--space-sm);
+}
+
+.favorite-searches:empty {
+  display: none;
+}
+
+.favorite-chip {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.favorite-chip:hover {
+  background: rgba(251, 191, 36, 0.22);
+}

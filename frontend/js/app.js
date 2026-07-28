@@ -58,6 +58,67 @@ function renderRecentSearches() {
 
 renderRecentSearches();
 
+const FAVORITES_KEY = "tempora-favorite-cities";
+const favoriteSearchesContainer = document.getElementById("favoriteSearches");
+const favoriteButton = document.getElementById("favoriteButton");
+const favoriteIcon = favoriteButton.querySelector(".favorite-icon");
+
+let currentCityName = "";
+
+function getFavorites() {
+  const stored = localStorage.getItem(FAVORITES_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+function isFavorite(city) {
+  return getFavorites().some((entry) => entry.toLowerCase() === city.toLowerCase());
+}
+
+function toggleFavorite(city) {
+  let favorites = getFavorites();
+
+  if (isFavorite(city)) {
+    favorites = favorites.filter((entry) => entry.toLowerCase() !== city.toLowerCase());
+  } else {
+    favorites.push(city);
+  }
+
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  updateFavoriteButton(city);
+  renderFavoriteSearches();
+}
+
+function updateFavoriteButton(city) {
+  const active = isFavorite(city);
+  favoriteButton.classList.toggle("is-active", active);
+  favoriteIcon.textContent = active ? "★" : "☆";
+}
+
+function renderFavoriteSearches() {
+  const favorites = getFavorites();
+  favoriteSearchesContainer.innerHTML = "";
+
+  favorites.forEach((city) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "favorite-chip";
+    chip.textContent = `★ ${city}`;
+    chip.addEventListener("click", () => {
+      cityInput.value = city;
+      searchForm.requestSubmit();
+    });
+    favoriteSearchesContainer.appendChild(chip);
+  });
+}
+
+favoriteButton.addEventListener("click", () => {
+  if (currentCityName) {
+    toggleFavorite(currentCityName);
+  }
+});
+
+renderFavoriteSearches();
+
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -125,6 +186,9 @@ function renderCurrentWeather(data) {
   stats[1].textContent = `${Math.round(data.current.wind_speed_kmh)} km/h`;
   stats[2].textContent = formatTime(data.sunrise);
   stats[3].textContent = formatTime(data.sunset);
+
+  currentCityName = data.city;
+  updateFavoriteButton(data.city);
 }
 
 function renderForecast(days) {

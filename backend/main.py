@@ -9,6 +9,9 @@ from services.weather_service import (
     CityNotFoundError,
 )
 from services.weather_codes import describe_condition
+from routers.auth import router as auth_router
+from routers.favorites import router as favorites_router
+from routers.recent_searches import router as recent_searches_router
 
 app = FastAPI(title="Tempora API")
 
@@ -18,6 +21,10 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+app.include_router(favorites_router)
+app.include_router(recent_searches_router)
 
 @app.get("/health")
 def health_check():
