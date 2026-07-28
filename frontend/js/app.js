@@ -3,9 +3,12 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 const searchForm = document.getElementById("searchForm");
 const cityInput = document.getElementById("cityInput");
 const forecastGrid = document.getElementById("forecastGrid");
+const recentSearchesContainer = document.getElementById("recentSearches");
 
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = themeToggle.querySelector(".theme-icon");
+
+const RECENT_SEARCHES_KEY = "tempora-recent-searches";
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -21,6 +24,39 @@ themeToggle.addEventListener("click", () => {
   const nextTheme = currentTheme === "light" ? "dark" : "light";
   applyTheme(nextTheme);
 });
+
+function getRecentSearches() {
+  const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+function saveRecentSearch(city) {
+  let recent = getRecentSearches();
+  recent = recent.filter((entry) => entry.toLowerCase() !== city.toLowerCase());
+  recent.unshift(city);
+  recent = recent.slice(0, 5);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent));
+  renderRecentSearches();
+}
+
+function renderRecentSearches() {
+  const recent = getRecentSearches();
+  recentSearchesContainer.innerHTML = "";
+
+  recent.forEach((city) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "recent-chip";
+    chip.textContent = city;
+    chip.addEventListener("click", () => {
+      cityInput.value = city;
+      searchForm.requestSubmit();
+    });
+    recentSearchesContainer.appendChild(chip);
+  });
+}
+
+renderRecentSearches();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -40,6 +76,7 @@ searchForm.addEventListener("submit", async (event) => {
 
     renderCurrentWeather(currentWeather);
     renderForecast(forecast.days);
+    saveRecentSearch(currentWeather.city);
   } catch (error) {
     renderError(error.message);
   }

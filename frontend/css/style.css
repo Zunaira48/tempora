@@ -252,3 +252,30 @@ body {
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
 }
+
+.recent-searches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: var(--space-md);
+}
+
+.recent-searches:empty {
+  display: none;
+}
+
+.recent-chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.recent-chip:hover {
+  background: var(--color-accent);
+  color: #0f172a;
+}
