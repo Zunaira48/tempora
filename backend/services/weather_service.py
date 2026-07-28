@@ -45,3 +45,18 @@ async def fetch_current_weather(latitude: float, longitude: float, timezone: str
         )
         response.raise_for_status()
         return response.json()
+
+async def fetch_forecast(latitude: float, longitude: float, timezone: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            FORECAST_URL,
+            params={
+                "latitude": latitude,
+                "longitude": longitude,
+                "daily": "temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max",
+                "forecast_days": 5,
+                "timezone": timezone,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
