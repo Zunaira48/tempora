@@ -8,6 +8,13 @@ const recentSearchesContainer = document.getElementById("recentSearches");
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = themeToggle.querySelector(".theme-icon");
 
+const sidebar = document.getElementById("sidebar");
+const sidebarToggle = document.getElementById("sidebarToggle");
+
+sidebarToggle.addEventListener("click", () => {
+  sidebar.classList.toggle("is-open");
+});
+
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   themeIcon.textContent = theme === "light" ? "☀️" : "🌙";
@@ -226,11 +233,7 @@ function renderCurrentWeather(data) {
   document.querySelector(".condition-text").textContent = data.current.condition_text;
   document.querySelector(".feels-like").textContent = `Feels like ${Math.round(data.current.feels_like_c)}°`;
 
-  const stats = document.querySelectorAll(".stat-value");
-  stats[0].textContent = `${data.current.humidity_percent}%`;
-  stats[1].textContent = `${Math.round(data.current.wind_speed_kmh)} km/h`;
-  stats[2].textContent = formatTime(data.sunrise);
-  stats[3].textContent = formatTime(data.sunset);
+  document.getElementById("humidityValue")?.remove;
 
   currentCityName = data.city;
   currentCountryName = data.country;

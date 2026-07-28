@@ -8,7 +8,11 @@
 </head>
 <body>
   <div class="app-shell">
-    <header class="app-header">
+    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+      <span class="sidebar-toggle-icon">☰</span>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
       <div class="brand">
         <span class="brand-mark">◐</span>
         <span class="brand-name">Tempora</span>
@@ -25,18 +29,27 @@
         <button type="submit" class="search-button">Search</button>
       </form>
 
-      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-        <span class="theme-icon">🌙</span>
-      </button>
-      <button type="button" class="theme-toggle" id="accountButton" aria-label="Account">
-        <span class="account-icon">👤</span>
-      </button>
-    </header>
+      <div class="sidebar-section">
+        <p class="sidebar-label">Recent</p>
+        <div class="recent-searches" id="recentSearches"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-label">Favorites</p>
+        <div class="favorite-searches" id="favoriteSearches"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button type="button" class="icon-button" id="themeToggle" aria-label="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <button type="button" class="icon-button" id="accountButton" aria-label="Account">
+          <span class="account-icon">👤</span>
+        </button>
+      </div>
+    </aside>
 
     <main class="dashboard">
-      <div class="recent-searches" id="recentSearches"></div>
-      <div class="favorite-searches" id="favoriteSearches"></div>
-
       <section class="current-weather-card">
         <div class="location-info">
           <div class="city-name-row">
@@ -56,24 +69,42 @@
           </div>
         </div>
 
-        <div class="weather-stats">
-          <div class="stat-item">
-            <span class="stat-label">Humidity</span>
-            <span class="stat-value">85%</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Wind</span>
-            <span class="stat-value">9 km/h</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Sunrise</span>
-            <span class="stat-value">5:15 AM</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Sunset</span>
-            <span class="stat-value">7:02 PM</span>
-          </div>
+        <div class="unit-toggle" id="unitToggle">
+          <button type="button" class="unit-option is-active" data-unit="c">°C</button>
+          <button type="button" class="unit-option" data-unit="f">°F</button>
         </div>
+      </section>
+
+      <section class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <span class="stat-label">Humidity</span>
+          <span class="stat-value">85%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Wind</span>
+          <span class="stat-value">9 km/h</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Sunrise</span>
+          <span class="stat-value">5:15 AM</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Sunset</span>
+          <span class="stat-value">7:02 PM</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">UV Index</span>
+          <span class="stat-value" id="uvValue">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Air Quality</span>
+          <span class="stat-value" id="aqiValue">—</span>
+        </div>
+      </section>
+
+      <section class="hourly-section">
+        <h2 class="section-title">Next 24 Hours</h2>
+        <div class="hourly-strip" id="hourlyStrip"></div>
       </section>
 
       <section class="forecast-section">
@@ -87,6 +118,7 @@
         </div>
       </section>
     </main>
+
     <div class="modal-overlay" id="authModalOverlay">
       <div class="modal-card">
         <button type="button" class="modal-close" id="authModalClose" aria-label="Close">✕</button>
@@ -112,8 +144,7 @@
       </div>
     </div>
   </div>
-  
-    
+
   <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
 </body>
