@@ -30,6 +30,40 @@ themeToggle.addEventListener("click", () => {
   applyTheme(nextTheme);
 });
 
+let currentUnit = localStorage.getItem("tempora-unit") || "c";
+let lastWeatherData = null;
+let lastHourlyData = null;
+
+const unitToggle = document.getElementById("unitToggle");
+
+function celsiusToFahrenheit(celsius) {
+  return (celsius * 9) / 5 + 32;
+}
+
+function formatTemp(celsius) {
+  const value = currentUnit === "f" ? celsiusToFahrenheit(celsius) : celsius;
+  return `${Math.round(value)}°`;
+}
+
+unitToggle.addEventListener("click", (event) => {
+  const button = event.target.closest(".unit-option");
+  if (!button) return;
+
+  currentUnit = button.dataset.unit;
+  localStorage.setItem("tempora-unit", currentUnit);
+
+  document.querySelectorAll(".unit-option").forEach((option) => {
+    option.classList.toggle("is-active", option.dataset.unit === currentUnit);
+  });
+
+  if (lastWeatherData) {
+    renderCurrentWeather(lastWeatherData);
+  }
+  if (lastHourlyData) {
+    renderHourly(lastHourlyData.hours);
+  }
+});
+
 async function fetchRecentSearches() {
   if (!isLoggedIn()) {
     recentSearchesContainer.innerHTML = "";
@@ -190,6 +224,7 @@ searchForm.addEventListener("submit", async (event) => {
     renderCurrentWeather(currentWeather);
     renderForecast(forecast.days);
     saveRecentSearch(currentWeather.city, currentWeather.country);
+    fetchHourly(currentWeather.city);
   } catch (error) {
     renderError(error.message);
   }
@@ -218,6 +253,36 @@ async function fetchForecast(city) {
   return response.json();
 }
 
+async function fetchHourly(city) {
+  const response = await fetch(`${API_BASE_URL}/weather/hourly?city=${encodeURIComponent(city)}`);
+  if (!response.ok) {
+    return;
+  }
+  const data = await response.json();
+  lastHourlyData = data;
+  renderHourly(data.hours);
+}
+
+function renderHourly(hours) {
+  const hourlyStrip = document.getElementById("hourlyStrip");
+  hourlyStrip.innerHTML = "";
+
+  hours.slice(0, 24).forEach((hour) => {
+    const card = document.createElement("div");
+    card.className = "hourly-card";
+    card.innerHTML = `
+      <span class="hourly-time">${formatHourLabel(hour.time)}</span>
+      <span class="hourly-temp">${formatTemp(hour.temperature_c)}</span>
+      <span class="hourly-condition">${hour.condition_text}</span>
+    `;
+    hourlyStrip.appendChild(card);
+  });
+}
+
+function formatHourLabel(isoString) {
+  return new Date(isoString).toLocaleTimeString("en-US", { hour: "numeric" });
+}
+
 function setLoadingState() {
   const card = document.querySelector(".current-weather-card");
   card.classList.add("is-loading");
@@ -227,13 +292,24 @@ function renderCurrentWeather(data) {
   const card = document.querySelector(".current-weather-card");
   card.classList.remove("is-loading");
 
+  lastWeatherData = data;
+
   document.querySelector(".city-name").textContent = `${data.city}, ${data.country}`;
   document.querySelector(".local-time").textContent = formatLocalTime(data.local_time);
-  document.querySelector(".temperature-value").textContent = `${Math.round(data.current.temperature_c)}°`;
+  document.querySelector(".temperature-value").textContent = formatTemp(data.current.temperature_c);
   document.querySelector(".condition-text").textContent = data.current.condition_text;
-  document.querySelector(".feels-like").textContent = `Feels like ${Math.round(data.current.feels_like_c)}°`;
+  document.querySelector(".feels-like").textContent = `Feels like ${formatTemp(data.current.feels_like_c)}`;
 
-  document.getElementById("humidityValue")?.remove;
+  const stats = document.querySelectorAll(".stat-value");
+  stats[0].textContent = `${data.current.humidity_percent}%`;
+  stats[1].textContent = `${Math.round(data.current.wind_speed_kmh)} km/h`;
+  stats[2].textContent = formatTime(data.sunrise);
+  stats[3].textContent = formatTime(data.sunset);
+
+  document.getElementById("uvValue").textContent =
+    data.current.uv_index != null ? data.current.uv_index.toFixed(1) : "—";
+  document.getElementById("aqiValue").textContent =
+    data.current.air_quality_index != null ? data.current.air_quality_index : "—";
 
   currentCityName = data.city;
   currentCountryName = data.country;
@@ -251,7 +327,7 @@ function renderForecast(days) {
     card.innerHTML = `
       <span class="forecast-day">${formatDayLabel(day.date)}</span>
       <span class="forecast-condition">${day.condition_text}</span>
-      <span class="forecast-temps">${Math.round(day.temperature_max_c)}° / ${Math.round(day.temperature_min_c)}°</span>
+      <span class="forecast-temps">${formatTemp(day.temperature_max_c)} / ${formatTemp(day.temperature_min_c)}</span>
     `;
     forecastGrid.appendChild(card);
   });
@@ -277,3 +353,7 @@ function formatTime(isoString) {
 function formatDayLabel(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", { weekday: "short" });
 }
+
+document.querySelectorAll(".unit-option").forEach((option) => {
+  option.classList.toggle("is-active", option.dataset.unit === currentUnit);
+});
