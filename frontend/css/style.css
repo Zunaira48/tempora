@@ -1,0 +1,217 @@
+:root {
+  --color-bg-start: #1e293b;
+  --color-bg-end: #0f172a;
+  --color-surface: rgba(255, 255, 255, 0.08);
+  --color-surface-border: rgba(255, 255, 255, 0.12);
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-accent: #38bdf8;
+
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2.5rem;
+
+  --font-body: "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+  background: linear-gradient(160deg, var(--color-bg-start), var(--color-bg-end));
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 960px;
+  margin-inline: auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-block-end: var(--space-lg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 600;
+}
+
+.brand-mark {
+  color: var(--color-accent);
+}
+
+.search-bar {
+  display: flex;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  min-width: 220px;
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.search-button {
+  background: var(--color-accent);
+  color: #0f172a;
+  border: none;
+  padding: 0 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.search-button:hover {
+  filter: brightness(1.1);
+}
+
+.current-weather-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  margin-block-end: var(--space-lg);
+}
+
+.city-name {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+}
+
+.local-time {
+  color: var(--color-text-secondary);
+  margin-block-start: var(--space-xs);
+}
+
+.temperature-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-block: var(--space-md);
+}
+
+.temperature-value {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.condition-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.condition-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.feels-like {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.weather-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-sm);
+  padding-block-start: var(--space-md);
+  border-top: 1px solid var(--color-surface-border);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.stat-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-block-end: var(--space-sm);
+  color: var(--color-text-secondary);
+}
+
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-sm);
+}
+
+.forecast-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.forecast-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.forecast-day {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.forecast-condition {
+  font-size: 0.9rem;
+}
+
+.forecast-temps {
+  font-weight: 600;
+}

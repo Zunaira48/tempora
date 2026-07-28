@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tempora — Weather, simplified</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark">◐</span>
+        <span class="brand-name">Tempora</span>
+      </div>
+
+      <form class="search-bar" id="searchForm">
+        <input
+          type="text"
+          id="cityInput"
+          class="search-input"
+          placeholder="Search for a city..."
+          autocomplete="off"
+        />
+        <button type="submit" class="search-button">Search</button>
+      </form>
+    </header>
+
+    <main class="dashboard">
+      <section class="current-weather-card">
+        <div class="location-info">
+          <h1 class="city-name">Lahore</h1>
+          <p class="local-time">Tuesday, 8:15 PM</p>
+        </div>
+
+        <div class="temperature-display">
+          <span class="temperature-value">31°</span>
+          <div class="condition-info">
+            <span class="condition-text">Overcast</span>
+            <span class="feels-like">Feels like 38°</span>
+          </div>
+        </div>
+
+        <div class="weather-stats">
+          <div class="stat-item">
+            <span class="stat-label">Humidity</span>
+            <span class="stat-value">85%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Wind</span>
+            <span class="stat-value">9 km/h</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Sunrise</span>
+            <span class="stat-value">5:15 AM</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Sunset</span>
+            <span class="stat-value">7:02 PM</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="forecast-section">
+        <h2 class="section-title">5-Day Forecast</h2>
+        <div class="forecast-grid" id="forecastGrid">
+          <div class="forecast-card">
+            <span class="forecast-day">Tue</span>
+            <span class="forecast-condition">Thunderstorm</span>
+            <span class="forecast-temps">34° / 27°</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
