@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 
 from schemas.weather import WeatherResponse, CurrentWeather
 from services.weather_service import resolve_city, fetch_current_weather, CityNotFoundError
+from services.weather_codes import describe_condition
 
 app = FastAPI(title="Tempora API")
 
@@ -22,6 +23,8 @@ async def get_weather(city: str = Query(..., min_length=1)):
         location["latitude"], location["longitude"], location["timezone"]
     )
     current = raw["current"]
+    daily = raw["daily"]
+    condition_text, condition_icon = describe_condition(current["weather_code"])
 
     return WeatherResponse(
         city=location["name"],
@@ -29,12 +32,16 @@ async def get_weather(city: str = Query(..., min_length=1)):
         latitude=location["latitude"],
         longitude=location["longitude"],
         local_time=current["time"],
+        sunrise=daily["sunrise"][0],
+        sunset=daily["sunset"][0],
         current=CurrentWeather(
             temperature_c=current["temperature_2m"],
             feels_like_c=current["apparent_temperature"],
             humidity_percent=current["relative_humidity_2m"],
             wind_speed_kmh=current["wind_speed_10m"],
             condition_code=current["weather_code"],
+            condition_text=condition_text,
+            condition_icon=condition_icon,
             is_day=bool(current["is_day"]),
         ),
     )

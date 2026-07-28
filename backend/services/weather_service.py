@@ -39,6 +39,7 @@ async def fetch_current_weather(latitude: float, longitude: float, timezone: str
                 "latitude": latitude,
                 "longitude": longitude,
                 "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day",
+                "daily": "sunrise,sunset",
                 "timezone": timezone,
             },
         )
