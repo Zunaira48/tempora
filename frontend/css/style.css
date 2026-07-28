@@ -220,3 +220,35 @@ body {
 .forecast-temps {
   font-weight: 600;
 }
+
+.current-weather-card.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.theme-toggle {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+}
+
+:root[data-theme="light"] {
+  --color-bg-start: #e2e8f0;
+  --color-bg-end: #f8fafc;
+  --color-surface: rgba(15, 23, 42, 0.05);
+  --color-surface-border: rgba(15, 23, 42, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+}
