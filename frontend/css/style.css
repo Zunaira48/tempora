@@ -44,6 +44,11 @@ body {
   flex-wrap: wrap;
   gap: var(--space-sm);
   margin-block-end: var(--space-lg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-block: var(--space-sm);
+  background: var(--color-bg-start);
 }
 
 .brand {
