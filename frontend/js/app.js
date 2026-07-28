@@ -8,8 +8,6 @@ const recentSearchesContainer = document.getElementById("recentSearches");
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = themeToggle.querySelector(".theme-icon");
 
-const RECENT_SEARCHES_KEY = "tempora-recent-searches";
-
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   themeIcon.textContent = theme === "light" ? "☀️" : "🌙";
@@ -25,99 +23,146 @@ themeToggle.addEventListener("click", () => {
   applyTheme(nextTheme);
 });
 
-function getRecentSearches() {
-  const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
-  return stored ? JSON.parse(stored) : [];
+async function fetchRecentSearches() {
+  if (!isLoggedIn()) {
+    recentSearchesContainer.innerHTML = "";
+    return;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/recent-searches`, {
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    return;
+  }
+
+  const entries = await response.json();
+  renderRecentSearches(entries);
 }
 
-function saveRecentSearch(city) {
-  let recent = getRecentSearches();
-  recent = recent.filter((entry) => entry.toLowerCase() !== city.toLowerCase());
-  recent.unshift(city);
-  recent = recent.slice(0, 5);
-  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent));
-  renderRecentSearches();
-}
-
-function renderRecentSearches() {
-  const recent = getRecentSearches();
+function renderRecentSearches(entries) {
   recentSearchesContainer.innerHTML = "";
 
-  recent.forEach((city) => {
+  entries.forEach((entry) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "recent-chip";
-    chip.textContent = city;
+    chip.textContent = entry.city_name;
     chip.addEventListener("click", () => {
-      cityInput.value = city;
+      cityInput.value = entry.city_name;
       searchForm.requestSubmit();
     });
     recentSearchesContainer.appendChild(chip);
   });
 }
 
-renderRecentSearches();
+async function saveRecentSearch(city, country) {
+  if (!isLoggedIn()) {
+    return;
+  }
 
-const FAVORITES_KEY = "tempora-favorite-cities";
+  await fetch(`${API_BASE_URL}/recent-searches`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ city_name: city, country }),
+  });
+
+  fetchRecentSearches();
+}
+
+let currentFavorites = [];
+let currentCityName = "";
+let currentCountryName = "";
+let currentLat = null;
+let currentLon = null;
+
 const favoriteSearchesContainer = document.getElementById("favoriteSearches");
 const favoriteButton = document.getElementById("favoriteButton");
 const favoriteIcon = favoriteButton.querySelector(".favorite-icon");
 
-let currentCityName = "";
-
-function getFavorites() {
-  const stored = localStorage.getItem(FAVORITES_KEY);
-  return stored ? JSON.parse(stored) : [];
-}
-
-function isFavorite(city) {
-  return getFavorites().some((entry) => entry.toLowerCase() === city.toLowerCase());
-}
-
-function toggleFavorite(city) {
-  let favorites = getFavorites();
-
-  if (isFavorite(city)) {
-    favorites = favorites.filter((entry) => entry.toLowerCase() !== city.toLowerCase());
-  } else {
-    favorites.push(city);
+async function fetchFavorites() {
+  if (!isLoggedIn()) {
+    favoriteSearchesContainer.innerHTML = "";
+    currentFavorites = [];
+    updateFavoriteButton();
+    return;
   }
 
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-  updateFavoriteButton(city);
-  renderFavoriteSearches();
-}
+  const response = await fetch(`${API_BASE_URL}/favorites`, {
+    headers: authHeaders(),
+  });
 
-function updateFavoriteButton(city) {
-  const active = isFavorite(city);
-  favoriteButton.classList.toggle("is-active", active);
-  favoriteIcon.textContent = active ? "★" : "☆";
+  if (!response.ok) {
+    return;
+  }
+
+  currentFavorites = await response.json();
+  renderFavoriteSearches();
+  updateFavoriteButton();
 }
 
 function renderFavoriteSearches() {
-  const favorites = getFavorites();
   favoriteSearchesContainer.innerHTML = "";
 
-  favorites.forEach((city) => {
+  currentFavorites.forEach((favorite) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "favorite-chip";
-    chip.textContent = `★ ${city}`;
+    chip.textContent = `★ ${favorite.city_name}`;
     chip.addEventListener("click", () => {
-      cityInput.value = city;
+      cityInput.value = favorite.city_name;
       searchForm.requestSubmit();
     });
     favoriteSearchesContainer.appendChild(chip);
   });
 }
 
-favoriteButton.addEventListener("click", () => {
-  if (currentCityName) {
-    toggleFavorite(currentCityName);
+function findFavorite(city) {
+  return currentFavorites.find((entry) => entry.city_name.toLowerCase() === city.toLowerCase());
+}
+
+function updateFavoriteButton() {
+  const active = Boolean(currentCityName) && Boolean(findFavorite(currentCityName));
+  favoriteButton.classList.toggle("is-active", active);
+  favoriteIcon.textContent = active ? "★" : "☆";
+}
+
+favoriteButton.addEventListener("click", async () => {
+  if (!currentCityName) {
+    return;
   }
+
+  if (!isLoggedIn()) {
+    openAuthModal();
+    return;
+  }
+
+  const existing = findFavorite(currentCityName);
+
+  if (existing) {
+    await fetch(`${API_BASE_URL}/favorites/${existing.id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  } else {
+    await fetch(`${API_BASE_URL}/favorites`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({
+        city_name: currentCityName,
+        country: currentCountryName,
+        latitude: currentLat,
+        longitude: currentLon,
+      }),
+    });
+  }
+
+  await fetchFavorites();
 });
 
-renderFavoriteSearches();
+fetchRecentSearches();
+fetchFavorites();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -137,7 +182,7 @@ searchForm.addEventListener("submit", async (event) => {
 
     renderCurrentWeather(currentWeather);
     renderForecast(forecast.days);
-    saveRecentSearch(currentWeather.city);
+    saveRecentSearch(currentWeather.city, currentWeather.country);
   } catch (error) {
     renderError(error.message);
   }
@@ -188,7 +233,10 @@ function renderCurrentWeather(data) {
   stats[3].textContent = formatTime(data.sunset);
 
   currentCityName = data.city;
-  updateFavoriteButton(data.city);
+  currentCountryName = data.country;
+  currentLat = data.latitude;
+  currentLon = data.longitude;
+  updateFavoriteButton();
 }
 
 function renderForecast(days) {
