@@ -10,6 +10,8 @@ class CurrentWeather(BaseModel):
     condition_text: str
     condition_icon: str
     is_day: bool
+    uv_index: float | None = None
+    air_quality_index: int | None = None
 
 
 class WeatherResponse(BaseModel):
@@ -20,8 +22,9 @@ class WeatherResponse(BaseModel):
     local_time: str
     sunrise: str
     sunset: str
-    current: CurrentWeather 
-    
+    current: CurrentWeather
+
+
 class DailyForecast(BaseModel):
     date: str
     temperature_max_c: float
@@ -36,3 +39,17 @@ class ForecastResponse(BaseModel):
     city: str
     country: str
     days: list[DailyForecast]
+
+
+class HourlyForecast(BaseModel):
+    time: str
+    temperature_c: float
+    condition_code: int
+    condition_text: str
+    condition_icon: str
+
+
+class HourlyResponse(BaseModel):
+    city: str
+    country: str
+    hours: list[HourlyForecast]

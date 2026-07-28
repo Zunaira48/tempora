@@ -2,6 +2,7 @@ import httpx
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 
 class CityNotFoundError(Exception):
@@ -39,12 +40,13 @@ async def fetch_current_weather(latitude: float, longitude: float, timezone: str
                 "latitude": latitude,
                 "longitude": longitude,
                 "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day",
-                "daily": "sunrise,sunset",
+                "daily": "sunrise,sunset,uv_index_max",
                 "timezone": timezone,
             },
         )
         response.raise_for_status()
         return response.json()
+
 
 async def fetch_forecast(latitude: float, longitude: float, timezone: str) -> dict:
     async with httpx.AsyncClient() as client:
@@ -56,6 +58,36 @@ async def fetch_forecast(latitude: float, longitude: float, timezone: str) -> di
                 "daily": "temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max",
                 "forecast_days": 5,
                 "timezone": timezone,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+async def fetch_hourly_forecast(latitude: float, longitude: float, timezone: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            FORECAST_URL,
+            params={
+                "latitude": latitude,
+                "longitude": longitude,
+                "hourly": "temperature_2m,weather_code",
+                "forecast_days": 2,
+                "timezone": timezone,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+async def fetch_air_quality(latitude: float, longitude: float) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            AIR_QUALITY_URL,
+            params={
+                "latitude": latitude,
+                "longitude": longitude,
+                "current": "us_aqi",
             },
         )
         response.raise_for_status()

@@ -1,17 +1,27 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas.weather import WeatherResponse, CurrentWeather, ForecastResponse, DailyForecast
+from schemas.weather import (
+    WeatherResponse,
+    CurrentWeather,
+    ForecastResponse,
+    DailyForecast,
+    HourlyResponse,
+    HourlyForecast,
+)
 from services.weather_service import (
     resolve_city,
     fetch_current_weather,
     fetch_forecast,
+    fetch_hourly_forecast,
+    fetch_air_quality,
     CityNotFoundError,
 )
 from services.weather_codes import describe_condition
 from routers.auth import router as auth_router
 from routers.favorites import router as favorites_router
 from routers.recent_searches import router as recent_searches_router
+
 
 app = FastAPI(title="Tempora API")
 
@@ -25,6 +35,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(favorites_router)
 app.include_router(recent_searches_router)
+
 
 @app.get("/health")
 def health_check():
@@ -45,6 +56,13 @@ async def get_weather(city: str = Query(..., min_length=1)):
     daily = raw["daily"]
     condition_text, condition_icon = describe_condition(current["weather_code"])
 
+    aqi_value = None
+    try:
+        air_quality_raw = await fetch_air_quality(location["latitude"], location["longitude"])
+        aqi_value = air_quality_raw.get("current", {}).get("us_aqi")
+    except Exception:
+        pass
+
     return WeatherResponse(
         city=location["name"],
         country=location["country"],
@@ -62,6 +80,8 @@ async def get_weather(city: str = Query(..., min_length=1)):
             condition_text=condition_text,
             condition_icon=condition_icon,
             is_day=bool(current["is_day"]),
+            uv_index=daily.get("uv_index_max", [None])[0],
+            air_quality_index=aqi_value,
         ),
     )
 
@@ -97,4 +117,36 @@ async def get_forecast(city: str = Query(..., min_length=1)):
         city=location["name"],
         country=location["country"],
         days=days,
+    )
+
+
+@app.get("/weather/hourly", response_model=HourlyResponse)
+async def get_hourly(city: str = Query(..., min_length=1)):
+    try:
+        location = await resolve_city(city)
+    except CityNotFoundError:
+        raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+
+    raw = await fetch_hourly_forecast(
+        location["latitude"], location["longitude"], location["timezone"]
+    )
+    hourly = raw["hourly"]
+
+    hours = []
+    for i in range(len(hourly["time"])):
+        condition_text, condition_icon = describe_condition(hourly["weather_code"][i])
+        hours.append(
+            HourlyForecast(
+                time=hourly["time"][i],
+                temperature_c=hourly["temperature_2m"][i],
+                condition_code=hourly["weather_code"][i],
+                condition_text=condition_text,
+                condition_icon=condition_icon,
+            )
+        )
+
+    return HourlyResponse(
+        city=location["name"],
+        country=location["country"],
+        hours=hours,
     )
