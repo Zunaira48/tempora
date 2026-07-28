@@ -1,0 +1,144 @@
+const AUTH_API_BASE = "http://127.0.0.1:8000";
+const TOKEN_KEY = "tempora-auth-token";
+
+const authModalOverlay = document.getElementById("authModalOverlay");
+const authModalClose = document.getElementById("authModalClose");
+const accountButton = document.getElementById("accountButton");
+
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginError = document.getElementById("loginError");
+const registerError = document.getElementById("registerError");
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+  updateAccountButton();
+}
+
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  updateAccountButton();
+}
+
+function isLoggedIn() {
+  return Boolean(getToken());
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function updateAccountButton() {
+  accountButton.classList.toggle("is-logged-in", isLoggedIn());
+  accountButton.querySelector(".account-icon").textContent = isLoggedIn() ? "🟢" : "👤";
+}
+
+function openAuthModal() {
+  authModalOverlay.classList.add("is-open");
+}
+
+function closeAuthModal() {
+  authModalOverlay.classList.remove("is-open");
+  loginError.textContent = "";
+  registerError.textContent = "";
+}
+
+function switchToLoginTab() {
+  loginTab.classList.add("is-active");
+  registerTab.classList.remove("is-active");
+  loginForm.classList.remove("is-hidden");
+  registerForm.classList.add("is-hidden");
+}
+
+function switchToRegisterTab() {
+  registerTab.classList.add("is-active");
+  loginTab.classList.remove("is-active");
+  registerForm.classList.remove("is-hidden");
+  loginForm.classList.add("is-hidden");
+}
+
+accountButton.addEventListener("click", () => {
+  if (isLoggedIn()) {
+    const confirmed = confirm("Log out of Tempora?");
+    if (confirmed) {
+      clearToken();
+    }
+    return;
+  }
+  openAuthModal();
+});
+
+authModalClose.addEventListener("click", closeAuthModal);
+
+authModalOverlay.addEventListener("click", (event) => {
+  if (event.target === authModalOverlay) {
+    closeAuthModal();
+  }
+});
+
+loginTab.addEventListener("click", switchToLoginTab);
+registerTab.addEventListener("click", switchToRegisterTab);
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginError.textContent = "";
+
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  try {
+    const response = await fetch(`${AUTH_API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Incorrect email or password");
+    }
+
+    const data = await response.json();
+    setToken(data.access_token);
+    loginForm.reset();
+    closeAuthModal();
+  } catch (error) {
+    loginError.textContent = error.message;
+  }
+});
+
+registerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  registerError.textContent = "";
+
+  const email = document.getElementById("registerEmail").value.trim();
+  const password = document.getElementById("registerPassword").value;
+
+  try {
+    const response = await fetch(`${AUTH_API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      throw new Error(errorBody?.detail || "Could not create account");
+    }
+
+    const data = await response.json();
+    setToken(data.access_token);
+    registerForm.reset();
+    closeAuthModal();
+  } catch (error) {
+    registerError.textContent = error.message;
+  }
+});
+
+updateAccountButton();
