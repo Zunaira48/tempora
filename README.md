@@ -33,18 +33,21 @@ A full-stack weather dashboard with real-time forecasts, hourly and 5-day outloo
 
 ## Architecture
 
-┌─────────────────┐ REST / JSON ┌──────────────────┐
-│ Frontend (SPA) │ ─────────────────────────▶│ FastAPI backend │
-│ HTML/CSS/JS │◀───────────────────────── │ │
-└─────────────────┘ └─────────┬────────┘
-│
-┌──────────────────┼──────────────────┐
-▼ ▼
-┌───────────────────┐ ┌────────────────────┐
-│ SQL Server │ │ Open-Meteo APIs │
-│ (users, favorites,│ │ (weather, geocoding,│
-│ recent_searches) │ │ air quality) │
-└───────────────────┘ └────────────────────┘
+```
+┌──────────────────┐        REST / JSON        ┌───────────────────┐
+│  Frontend (SPA)   │ ─────────────────────────▶│   FastAPI backend  │
+│  HTML / CSS / JS  │◀───────────────────────── │                    │
+└──────────────────┘                            └─────────┬──────────┘
+                                                            │
+                                       ┌────────────────────┼────────────────────┐
+                                       ▼                                         ▼
+                             ┌────────────────────┐               ┌──────────────────────┐
+                             │     SQL Server       │               │    Open-Meteo APIs     │
+                             │  users, favorites,   │               │  weather, geocoding,   │
+                             │  recent_searches      │               │  air quality           │
+                             └────────────────────┘               └──────────────────────┘
+```
+
 Authentication is JWT-based: the backend issues a signed token on login/register, and the frontend attaches it as a `Bearer` header on every request to `/favorites` and `/recent-searches`, both of which are scoped to the authenticated user.
 
 ---
@@ -63,35 +66,37 @@ Authentication is JWT-based: the backend issues a signed token on login/register
 
 ## Project Structure
 
+```
 tempora/
 ├── backend/
-│ ├── auth/
-│ │ ├── security.py # password hashing, JWT create/decode
-│ │ └── dependencies.py # get_current_user dependency
-│ ├── routers/
-│ │ ├── auth.py # /auth/register, /auth/login
-│ │ ├── favorites.py # /favorites CRUD
-│ │ └── recent_searches.py # /recent-searches CRUD
-│ ├── schemas/
-│ │ ├── weather.py
-│ │ ├── auth.py
-│ │ ├── favorites.py
-│ │ └── recent_searches.py
-│ ├── services/
-│ │ ├── weather_service.py # Open-Meteo integration
-│ │ └── weather_codes.py # WMO code → text/icon mapping
-│ ├── database.py # SQLAlchemy engine/session
-│ ├── models.py # User, Favorite, RecentSearch ORM models
-│ ├── create_tables.py # one-time table creation script
-│ └── main.py
+│   ├── auth/
+│   │   ├── security.py         # password hashing, JWT create/decode
+│   │   └── dependencies.py     # get_current_user dependency
+│   ├── routers/
+│   │   ├── auth.py             # /auth/register, /auth/login
+│   │   ├── favorites.py        # /favorites CRUD
+│   │   └── recent_searches.py  # /recent-searches CRUD
+│   ├── schemas/
+│   │   ├── weather.py
+│   │   ├── auth.py
+│   │   ├── favorites.py
+│   │   └── recent_searches.py
+│   ├── services/
+│   │   ├── weather_service.py  # Open-Meteo integration
+│   │   └── weather_codes.py    # WMO code -> text/icon mapping
+│   ├── database.py             # SQLAlchemy engine/session
+│   ├── models.py               # User, Favorite, RecentSearch ORM models
+│   ├── create_tables.py        # one-time table creation script
+│   └── main.py
 ├── frontend/
-│ ├── css/style.css
-│ ├── js/
-│ │ ├── app.js
-│ │ └── auth.js
-│ └── index.html
-└── docs/ # screenshots for this README
-
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   ├── app.js
+│   │   └── auth.js
+│   └── index.html
+└── docs/                       # screenshots for this README
+```
 
 ---
 
@@ -125,14 +130,16 @@ CREATE DATABASE TemporaDB;
 
 Copy `.env.example` to `.env` in `backend/` and fill in your own values:
 
+```
 DB_SERVER=localhost
 DB_NAME=TemporaDB
 DB_USER=your_sql_username
 DB_PASSWORD=your_sql_password
 JWT_SECRET=generate_with_python_secrets_token_hex_32
-
+```
 
 Generate a secret:
+
 ```powershell
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
@@ -200,3 +207,4 @@ A few intentional decisions worth mentioning if you're reading this as a code re
 **Zunaira Zahid**
 GitHub: [@Zunaira48](https://github.com/Zunaira48)
 
+This is a personal/educational project built to practice full-stack development — FastAPI, SQL Server, JWT authentication, and vanilla JS frontend architecture.
