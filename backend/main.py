@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemas.weather import (
@@ -21,13 +21,20 @@ from services.weather_codes import describe_condition
 from routers.auth import router as auth_router
 from routers.favorites import router as favorites_router
 from routers.recent_searches import router as recent_searches_router
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from error_handlers import http_exception_handler, unhandled_exception_middleware
+
+import config
 
 
 app = FastAPI(title="Tempora API")
 
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.middleware("http")(unhandled_exception_middleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
