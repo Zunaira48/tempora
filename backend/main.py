@@ -1,3 +1,7 @@
+from logging_config import configure_logging
+
+configure_logging()
+
 import logging
 
 from fastapi import FastAPI, HTTPException, Query, Request, Depends
@@ -75,6 +79,7 @@ async def get_weather(city: str = Query(..., min_length=1)):
     try:
         location = await resolve_city(city)
     except CityNotFoundError:
+        logger.info("City not found: %r", city)
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
 
     raw = await fetch_current_weather(
@@ -89,7 +94,7 @@ async def get_weather(city: str = Query(..., min_length=1)):
         air_quality_raw = await fetch_air_quality(location["latitude"], location["longitude"])
         aqi_value = air_quality_raw.get("current", {}).get("us_aqi")
     except Exception:
-        pass
+        logger.warning("AQI fetch failed for %s (%s, %s)", location["name"], location["latitude"], location["longitude"])
 
     return WeatherResponse(
         city=location["name"],
