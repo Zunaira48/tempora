@@ -1,4 +1,4 @@
-const AUTH_API_BASE = "http://127.0.0.1:8000";
+const AUTH_API_BASE = API_BASE_URL;
 const TOKEN_KEY = "tempora-auth-token";
 
 const authModalOverlay = document.getElementById("authModalOverlay");
