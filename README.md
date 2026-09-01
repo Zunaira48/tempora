@@ -25,7 +25,7 @@ A full-stack weather dashboard with real-time forecasts, hourly and 5-day outloo
 
 **Frontend:** vanilla HTML, CSS, JavaScript — no framework, no build step
 **Backend:** FastAPI (Python), SQLAlchemy ORM
-**Database:** Microsoft SQL Server
+**Database:** PostgreSQL (Neon)
 **Auth:** JWT (python-jose) + bcrypt password hashing (passlib)
 **Weather data:** [Open-Meteo](https://open-meteo.com/) (forecast, geocoding, and air-quality APIs)
 
