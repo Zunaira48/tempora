@@ -120,7 +120,8 @@
     </main>
 
     <div class="modal-overlay" id="authModalOverlay">
-      <div class="modal-card">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <h2 id="authModalTitle" class="sr-only">Log in or sign up</h2>
         <button type="button" class="modal-close" id="authModalClose" aria-label="Close">✕</button>
 
         <div class="modal-tabs">
@@ -131,14 +132,14 @@
         <form class="auth-form" id="loginForm">
           <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required autocomplete="email" />
           <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required autocomplete="current-password" />
-          <p class="auth-error" id="loginError"></p>
+          <p class="auth-error" id="loginError" role="alert" aria-live="polite"></p>
           <button type="submit" class="auth-submit">Log In</button>
         </form>
 
         <form class="auth-form is-hidden" id="registerForm">
           <input type="email" class="auth-input" id="registerEmail" placeholder="Email" required autocomplete="email" />
           <input type="password" class="auth-input" id="registerPassword" placeholder="Password (min 8 characters)" required minlength="8" autocomplete="new-password" />
-          <p class="auth-error" id="registerError"></p>
+          <p class="auth-error" id="registerError" role="alert" aria-live="polite"></p>
           <button type="submit" class="auth-submit">Sign Up</button>
         </form>
       </div>

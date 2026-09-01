@@ -44,15 +44,63 @@ function updateAccountButton() {
   accountButton.querySelector(".account-icon").textContent = isLoggedIn() ? "🟢" : "👤";
 }
 
+let lastFocusedElement = null;
+
+function getFocusableModalElements() {
+  return authModalOverlay.querySelectorAll(
+    'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+}
+
 function openAuthModal() {
+  lastFocusedElement = document.activeElement;
   authModalOverlay.classList.add("is-open");
+
+  const focusable = getFocusableModalElements();
+  if (focusable.length > 0) {
+    focusable[0].focus();
+  }
 }
 
 function closeAuthModal() {
   authModalOverlay.classList.remove("is-open");
   loginError.textContent = "";
   registerError.textContent = "";
+
+  if (lastFocusedElement) {
+    lastFocusedElement.focus();
+    lastFocusedElement = null;
+  }
 }
+
+document.addEventListener("keydown", (event) => {
+  if (!authModalOverlay.classList.contains("is-open")) {
+    return;
+  }
+
+  if (event.key === "Escape") {
+    closeAuthModal();
+    return;
+  }
+
+  if (event.key === "Tab") {
+    const focusable = Array.from(getFocusableModalElements());
+    if (focusable.length === 0) {
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+});
 
 function switchToLoginTab() {
   loginTab.classList.add("is-active");
