@@ -1,5 +1,11 @@
-from fastapi import FastAPI, HTTPException, Query, Request
+import logging
+
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from database import get_db
 
 from schemas.weather import (
     WeatherResponse,
@@ -27,7 +33,10 @@ from error_handlers import http_exception_handler, unhandled_exception_middlewar
 import config
 
 
-app = FastAPI(title="Tempora API")
+
+logger = logging.getLogger("tempora")
+
+app = FastAPI()
 
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.middleware("http")(unhandled_exception_middleware)
@@ -45,8 +54,20 @@ app.include_router(recent_searches_router)
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        database_status = "ok"
+    except Exception:
+        logger.exception("Health check database ping failed")
+        database_status = "unreachable"
+
+    overall_status = "ok" if database_status == "ok" else "degraded"
+
+    return {
+        "status": overall_status,
+        "database": database_status,
+    }
 
 
 @app.get("/weather", response_model=WeatherResponse)
