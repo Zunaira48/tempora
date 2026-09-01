@@ -34,6 +34,10 @@ function authHeaders() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+function handleAuthExpired() {
+  clearToken();
+  openAuthModal();
+}
 
 function updateAccountButton() {
   accountButton.classList.toggle("is-logged-in", isLoggedIn());

@@ -74,6 +74,11 @@ async function fetchRecentSearches() {
     headers: authHeaders(),
   });
 
+  if (response.status === 401) {
+    handleAuthExpired();
+    return;
+  }
+
   if (!response.ok) {
     return;
   }
@@ -134,6 +139,11 @@ async function fetchFavorites() {
     headers: authHeaders(),
   });
 
+  if (response.status === 401) {
+    handleAuthExpired();
+    return;
+  }
+
   if (!response.ok) {
     return;
   }
@@ -180,14 +190,15 @@ favoriteButton.addEventListener("click", async () => {
   }
 
   const existing = findFavorite(currentCityName);
+  let response;
 
   if (existing) {
-    await fetch(`${API_BASE_URL}/favorites/${existing.id}`, {
+    response = await fetch(`${API_BASE_URL}/favorites/${existing.id}`, {
       method: "DELETE",
       headers: authHeaders(),
     });
   } else {
-    await fetch(`${API_BASE_URL}/favorites`, {
+    response = await fetch(`${API_BASE_URL}/favorites`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({
@@ -197,6 +208,11 @@ favoriteButton.addEventListener("click", async () => {
         longitude: currentLon,
       }),
     });
+  }
+
+  if (response.status === 401) {
+    handleAuthExpired();
+    return;
   }
 
   await fetchFavorites();
