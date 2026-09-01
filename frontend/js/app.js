@@ -221,6 +221,11 @@ favoriteButton.addEventListener("click", async () => {
 fetchRecentSearches();
 fetchFavorites();
 
+window.addEventListener("tempora-auth-changed", () => {
+  fetchRecentSearches();
+  fetchFavorites();
+});
+
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 

@@ -73,6 +73,7 @@ accountButton.addEventListener("click", () => {
     const confirmed = confirm("Log out of Tempora?");
     if (confirmed) {
       clearToken();
+      window.dispatchEvent(new Event("tempora-auth-changed"));
     }
     return;
   }
@@ -112,6 +113,7 @@ loginForm.addEventListener("submit", async (event) => {
     setToken(data.access_token);
     loginForm.reset();
     closeAuthModal();
+    window.dispatchEvent(new Event("tempora-auth-changed"));
   } catch (error) {
     loginError.textContent = error.message;
   }
@@ -140,6 +142,7 @@ registerForm.addEventListener("submit", async (event) => {
     setToken(data.access_token);
     registerForm.reset();
     closeAuthModal();
+    window.dispatchEvent(new Event("tempora-auth-changed"));
   } catch (error) {
     registerError.textContent = error.message;
   }
