@@ -71,7 +71,7 @@ async def fetch_hourly_forecast(latitude: float, longitude: float, timezone: str
             params={
                 "latitude": latitude,
                 "longitude": longitude,
-                "hourly": "temperature_2m,weather_code",
+                "hourly": "temperature_2m,weather_code,precipitation_probability,wind_speed_10m,apparent_temperature",
                 "forecast_days": 2,
                 "timezone": timezone,
             },
