@@ -31,6 +31,7 @@ from services.weather_codes import describe_condition
 from routers.auth import router as auth_router
 from routers.favorites import router as favorites_router
 from routers.recent_searches import router as recent_searches_router
+from routers.ai import router as ai_router
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from error_handlers import http_exception_handler, unhandled_exception_middleware
 
@@ -55,6 +56,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(favorites_router)
 app.include_router(recent_searches_router)
+app.include_router(ai_router)
 
 
 @app.get("/health")
