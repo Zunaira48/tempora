@@ -1,5 +1,9 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("tempora")
 
 import models
 from auth.dependencies import get_current_user
@@ -9,7 +13,9 @@ from services.ai.context import build_current_context
 from services.ai.prompts import COPILOT_SYSTEM_PROMPT
 from services.ai.provider import generate_text, AIProviderError
 from services.ai.rate_limiter import check_rate_limit, RateLimitExceeded
-from services.ai.schemas import CopilotRequest, CopilotResponse
+from services.ai.schemas import CopilotRequest, CopilotResponse, ExplainWeatherRequest, ExplainWeatherResponse
+from services.ai.prompts import EXPLAIN_WEATHER_SYSTEM_PROMPT
+from services.weather_intelligence import score_current_conditions
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -50,10 +56,72 @@ async def ask_copilot(
 
     try:
         reply = await generate_text(system_prompt=COPILOT_SYSTEM_PROMPT, user_prompt=user_prompt)
-    except AIProviderError:
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
         raise HTTPException(
             status_code=503,
             detail="Tempora Copilot is temporarily unavailable. Weather data is still available.",
         )
 
     return CopilotResponse(reply=reply)
+
+
+
+@router.post("/explain-weather", response_model=ExplainWeatherResponse)
+async def explain_weather(
+    payload: ExplainWeatherRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        check_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    try:
+        location = await resolve_city(payload.city)
+    except CityNotFoundError:
+        raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+
+    current_weather = await fetch_current_weather(
+        location["latitude"], location["longitude"], location["timezone"]
+    )
+
+    aqi_value = None
+    try:
+        air_quality_raw = await fetch_air_quality(location["latitude"], location["longitude"])
+        aqi_value = air_quality_raw.get("current", {}).get("us_aqi")
+    except Exception:
+        pass
+
+    context = build_current_context(location, current_weather, aqi_value)
+    current = context["current"]
+
+    outdoor_score = score_current_conditions(
+        feels_like_c=current["feels_like_c"],
+        wind_speed_kmh=current["wind_speed_kmh"],
+        uv_index=current["uv_index"],
+        aqi=current["aqi"],
+    )
+
+    user_prompt = (
+        f"Weather context (JSON): {context}\n\n"
+        f"Outdoor suitability score: {outdoor_score.overall}/100\n"
+        f"Score breakdown by factor: {outdoor_score.components}\n\n"
+        f"Write the Explain My Weather summary."
+    )
+
+    try:
+        summary = await generate_text(system_prompt=EXPLAIN_WEATHER_SYSTEM_PROMPT, user_prompt=user_prompt)
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora Copilot is temporarily unavailable. Weather data is still available.",
+        )
+
+    return ExplainWeatherResponse(
+        summary=summary,
+        score=outdoor_score.overall,
+        score_components=outdoor_score.components,
+    )

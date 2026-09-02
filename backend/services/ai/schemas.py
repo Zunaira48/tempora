@@ -18,3 +18,13 @@ class CopilotRequest(BaseModel):
 
 class CopilotResponse(BaseModel):
     reply: str
+
+
+class ExplainWeatherRequest(BaseModel):
+    city: str = Field(..., min_length=1, max_length=100)
+
+
+class ExplainWeatherResponse(BaseModel):
+    summary: str
+    score: int
+    score_components: dict[str, int]

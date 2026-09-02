@@ -784,3 +784,63 @@ body {
     right: 16px;
   }
 }
+
+
+/* ---------- Explain My Weather ---------- */
+
+.explain-weather-button {
+  position: fixed;
+  bottom: 24px;
+  right: 92px;
+  padding: 10px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1e293b;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  z-index: 40;
+}
+
+.explain-weather-button:hover {
+  background: #334155;
+}
+
+.explain-weather-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.explain-weather-result {
+  position: fixed;
+  bottom: 76px;
+  right: 24px;
+  width: 320px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  z-index: 41;
+}
+
+.explain-weather-result[hidden] {
+  display: none;
+}
+
+.explain-weather-score {
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .explain-weather-button {
+    right: 84px;
+    bottom: 16px;
+  }
+}

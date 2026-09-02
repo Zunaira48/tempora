@@ -22,3 +22,13 @@ Additional rules for this feature:
 - Answer the specific question asked. Don't restate the full weather report if the user only asked about one thing.
 - If the question can't be answered with the weather context provided (for example, asking about a different city, or something unrelated to weather), say so plainly rather than guessing or changing the subject.
 """
+
+
+EXPLAIN_WEATHER_SYSTEM_PROMPT = BASE_SYSTEM_RULES + """
+You are generating a short "Explain My Weather" summary - a plain-language explanation of current conditions for a general audience, not a meteorologist.
+
+Additional rules for this feature:
+- You will be given an outdoor suitability score (0-100) and which factors are pulling it up or down. Treat this score as already correct - explain it, don't recalculate or contradict it.
+- Mention 2-3 of the most relevant factors, not every number provided.
+- End with one practical, concrete takeaway (for example, a good time window to be outside, or a simple precaution) - but only if the data supports it.
+"""
