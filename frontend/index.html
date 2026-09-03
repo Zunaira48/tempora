@@ -53,19 +53,22 @@
       <section class="current-weather-card">
         <div class="location-info">
           <div class="city-name-row">
-            <h1 class="city-name">Lahore</h1>
+            <h1 class="city-name">Tempora</h1>
             <button type="button" class="favorite-button" id="favoriteButton" aria-label="Add to favorites">
               <span class="favorite-icon">☆</span>
             </button>
+            <button type="button" class="tempo-ai-trigger" id="tempoAiButton" aria-label="Open Tempora AI">
+              🤖 Tempora AI
+            </button>
           </div>
-          <p class="local-time">Tuesday, 8:15 PM</p>
+          <p class="local-time">Loading weather…</p>
         </div>
 
         <div class="temperature-display">
-          <span class="temperature-value">31°</span>
+          <span class="temperature-value">—°</span>
           <div class="condition-info">
-            <span class="condition-text">Overcast</span>
-            <span class="feels-like">Feels like 38°</span>
+            <span class="condition-text">—</span>
+            <span class="feels-like">Feels like —°</span>
           </div>
         </div>
 
@@ -78,19 +81,19 @@
       <section class="stats-grid" id="statsGrid">
         <div class="stat-card">
           <span class="stat-label">Humidity</span>
-          <span class="stat-value">85%</span>
+          <span class="stat-value">—</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Wind</span>
-          <span class="stat-value">9 km/h</span>
+          <span class="stat-value">—</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Sunrise</span>
-          <span class="stat-value">5:15 AM</span>
+          <span class="stat-value">—</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Sunset</span>
-          <span class="stat-value">7:02 PM</span>
+          <span class="stat-value">—</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">UV Index</span>
@@ -109,13 +112,7 @@
 
       <section class="forecast-section">
         <h2 class="section-title">5-Day Forecast</h2>
-        <div class="forecast-grid" id="forecastGrid">
-          <div class="forecast-card">
-            <span class="forecast-day">Tue</span>
-            <span class="forecast-condition">Thunderstorm</span>
-            <span class="forecast-temps">34° / 27°</span>
-          </div>
-        </div>
+        <div class="forecast-grid" id="forecastGrid"></div>
       </section>
     </main>
 
@@ -146,66 +143,53 @@
     </div>
   </div>
 
-  <button type="button" id="explainWeatherButton" class="explain-weather-button">
-    Explain My Weather
-  </button>
-  <div id="explainWeatherResult" class="explain-weather-result" hidden></div>
-
-  <button type="button" id="activityAdvisorToggle" class="activity-toggle">🏃 Activities</button>
-
-  <div id="activityAdvisorPanel" class="activity-panel" role="dialog" aria-modal="false" aria-labelledby="activityPanelTitle" hidden>
-    <div class="copilot-header">
-      <h2 id="activityPanelTitle">Activity Advisor</h2>
-      <button type="button" id="activityAdvisorClose" class="modal-close" aria-label="Close Activity Advisor">✕</button>
+  <div id="tempoAiPanel" class="tempo-ai-panel" role="dialog" aria-modal="false" aria-labelledby="tempoAiTitle" hidden>
+    <div class="tempo-ai-header">
+      <h2 id="tempoAiTitle">🤖 Tempora AI</h2>
+      <button type="button" id="tempoAiClose" class="modal-close" aria-label="Close Tempora AI">✕</button>
     </div>
 
-    <div class="activity-grid">
-      <button type="button" class="activity-btn" data-activity="running">🏃 Running</button>
-      <button type="button" class="activity-btn" data-activity="walking">🚶 Walking</button>
-      <button type="button" class="activity-btn" data-activity="cycling">🚴 Cycling</button>
-      <button type="button" class="activity-btn" data-activity="beach">🏖 Beach</button>
-      <button type="button" class="activity-btn" data-activity="photography">📸 Photography</button>
-      <button type="button" class="activity-btn" data-activity="picnic">🧺 Picnic</button>
-      <button type="button" class="activity-btn" data-activity="hiking">🌳 Hiking</button>
-      <button type="button" class="activity-btn" data-activity="travel">✈️ Travel</button>
-      <button type="button" class="activity-btn" data-activity="university">🎓 University</button>
-      <button type="button" class="activity-btn" data-activity="outdoor_event">💍 Outdoor Event</button>
+    <div class="tempo-ai-tabs">
+      <button type="button" class="tempo-ai-tab is-active" data-tab="chat">💬 Chat</button>
+      <button type="button" class="tempo-ai-tab" data-tab="explain">📋 Explain</button>
+      <button type="button" class="tempo-ai-tab" data-tab="activities">🏃 Activities</button>
     </div>
 
-    <div id="activityAdvisorResult" class="activity-result"></div>
-  </div>
-
-  <div id="copilotToggle" class="copilot-toggle" role="button" tabindex="0" aria-label="Open Tempora Copilot">
-    ✨
-  </div>
-
-  <div id="copilotPanel" class="copilot-panel" role="dialog" aria-modal="false" aria-labelledby="copilotTitle" hidden>
-    <div class="copilot-header">
-      <h2 id="copilotTitle">✨ Tempora Copilot</h2>
-      <button type="button" id="copilotClose" class="modal-close" aria-label="Close Copilot">✕</button>
+    <div class="tempo-ai-tab-panel" data-tab-panel="chat">
+      <div id="copilotMessages" class="copilot-messages" aria-live="polite"></div>
+      <form id="copilotForm" class="copilot-form">
+        <input type="text" id="copilotInput" placeholder="Ask Tempora..." maxlength="500" autocomplete="off" />
+        <button type="submit" id="copilotSend">Ask</button>
+      </form>
     </div>
 
-    <p class="copilot-subtitle">Ask about your weather</p>
+    <div class="tempo-ai-tab-panel is-hidden" data-tab-panel="explain">
+      <button type="button" id="explainWeatherButton" class="tempo-ai-action-button">
+        Explain Current Weather
+      </button>
+      <div id="explainWeatherResult" class="explain-weather-result"></div>
+    </div>
 
-    <div id="copilotMessages" class="copilot-messages" aria-live="polite"></div>
-
-    <form id="copilotForm" class="copilot-form">
-      <input
-        type="text"
-        id="copilotInput"
-        placeholder="Ask Tempora..."
-        maxlength="500"
-        autocomplete="off"
-      />
-      <button type="submit" id="copilotSend">Ask</button>
-    </form>
+    <div class="tempo-ai-tab-panel is-hidden" data-tab-panel="activities">
+      <div class="activity-grid">
+        <button type="button" class="activity-btn" data-activity="running">🏃 Running</button>
+        <button type="button" class="activity-btn" data-activity="walking">🚶 Walking</button>
+        <button type="button" class="activity-btn" data-activity="cycling">🚴 Cycling</button>
+        <button type="button" class="activity-btn" data-activity="beach">🏖 Beach</button>
+        <button type="button" class="activity-btn" data-activity="photography">📸 Photography</button>
+        <button type="button" class="activity-btn" data-activity="picnic">🧺 Picnic</button>
+        <button type="button" class="activity-btn" data-activity="hiking">🌳 Hiking</button>
+        <button type="button" class="activity-btn" data-activity="travel">✈️ Travel</button>
+        <button type="button" class="activity-btn" data-activity="university">🎓 University</button>
+        <button type="button" class="activity-btn" data-activity="outdoor_event">💍 Outdoor Event</button>
+      </div>
+      <div id="activityAdvisorResult" class="activity-result"></div>
+    </div>
   </div>
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/copilot.js"></script>
-  <script src="js/explain-weather.js"></script>
-  <script src="js/activity-advisor.js"></script>
+  <script src="js/tempo-ai.js"></script>
 </body>
 </html>

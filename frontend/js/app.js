@@ -224,14 +224,7 @@ window.addEventListener("tempora-auth-changed", () => {
   fetchFavorites();
 });
 
-searchForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const city = cityInput.value.trim();
-  if (!city) {
-    return;
-  }
-
+async function loadWeatherForCity(city) {
   setLoadingState();
 
   try {
@@ -244,10 +237,26 @@ searchForm.addEventListener("submit", async (event) => {
     renderForecast(forecast.days);
     saveRecentSearch(currentWeather.city, currentWeather.country);
     fetchHourly(currentWeather.city);
+    localStorage.setItem("tempora-last-city", currentWeather.city);
   } catch (error) {
     renderError(error.message);
   }
+}
+
+searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const city = cityInput.value.trim();
+  if (!city) {
+    return;
+  }
+
+  loadWeatherForCity(city);
 });
+
+const DEFAULT_CITY = "Lahore";
+const lastSearchedCity = localStorage.getItem("tempora-last-city") || DEFAULT_CITY;
+loadWeatherForCity(lastSearchedCity);
 
 async function fetchCurrentWeather(city) {
   const response = await fetch(`${API_BASE_URL}/weather?city=${encodeURIComponent(city)}`);
