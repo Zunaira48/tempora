@@ -307,3 +307,27 @@ def build_activity_reasons(components: dict) -> list[str]:
         reasons.append("Breezy conditions")
 
     return reasons
+
+
+
+def find_nearest_hour_index(times: list[str], target_hour: int) -> int | None:
+    """Finds the first hourly forecast slot matching a given hour-of-day
+    (0-23). Since the hourly forecast starts from the current hour and
+    extends ~48h forward, this naturally picks today's occurrence if it
+    hasn't passed yet, or tomorrow's otherwise."""
+    for index, time_string in enumerate(times):
+        if _hour_of(time_string) == target_hour:
+            return index
+    return None
+
+
+def comfort_label(score: int) -> str:
+    """Deterministic, transparent mapping from score to a plain-language
+    label - AI never invents this classification, only reads it."""
+    if score >= 80:
+        return "Great"
+    if score >= 60:
+        return "Comfortable"
+    if score >= 40:
+        return "Fair"
+    return "Uncomfortable"

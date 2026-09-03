@@ -43,3 +43,22 @@ class ActivityAdvisorResponse(BaseModel):
     score: int
     reasons: list[str]
     summary: str
+
+
+
+class PlanMyDayRequest(BaseModel):
+    city: str = Field(..., min_length=1, max_length=100)
+    plan_text: str = Field(..., min_length=1, max_length=500)
+
+
+class PlanEventResult(BaseModel):
+    time: str
+    label: str
+    temperature_c: float
+    condition_score: int
+    comfort_label: str
+
+
+class PlanMyDayResponse(BaseModel):
+    schedule: list[PlanEventResult]
+    summary: str

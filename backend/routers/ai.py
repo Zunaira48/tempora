@@ -15,10 +15,26 @@ from services.ai.provider import generate_text, AIProviderError
 from services.ai.rate_limiter import check_rate_limit, RateLimitExceeded
 from services.ai.schemas import CopilotRequest, CopilotResponse, ExplainWeatherRequest, ExplainWeatherResponse
 from services.ai.prompts import EXPLAIN_WEATHER_SYSTEM_PROMPT
-from services.weather_intelligence import score_current_conditions, ACTIVITY_PROFILES, find_best_activity_window, build_activity_reasons
+import json
+
+from services.weather_intelligence import (
+    score_current_conditions,
+    ACTIVITY_PROFILES,
+    find_best_activity_window,
+    build_activity_reasons,
+    score_hourly_slot,
+    find_nearest_hour_index,
+    comfort_label,
+)
 from services.weather_service import fetch_hourly_forecast
-from services.ai.prompts import ACTIVITY_ADVISOR_SYSTEM_PROMPT
-from services.ai.schemas import ActivityAdvisorRequest, ActivityAdvisorResponse
+from services.ai.prompts import ACTIVITY_ADVISOR_SYSTEM_PROMPT, PLAN_EXTRACT_SYSTEM_PROMPT, PLAN_MY_DAY_SYSTEM_PROMPT
+from services.ai.schemas import (
+    ActivityAdvisorRequest,
+    ActivityAdvisorResponse,
+    PlanMyDayRequest,
+    PlanMyDayResponse,
+    PlanEventResult,
+)
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -189,3 +205,98 @@ async def activity_advisor(
         reasons=reasons,
         summary=summary,
     )
+
+
+
+@router.post("/plan-my-day", response_model=PlanMyDayResponse)
+async def plan_my_day(
+    payload: PlanMyDayRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        check_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    try:
+        location = await resolve_city(payload.city)
+    except CityNotFoundError:
+        raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+
+    hourly = await fetch_hourly_forecast(location["latitude"], location["longitude"], location["timezone"])
+    times = hourly["hourly"]["time"]
+    temps = hourly["hourly"]["apparent_temperature"]
+    precip = hourly["hourly"]["precipitation_probability"]
+    wind = hourly["hourly"]["wind_speed_10m"]
+
+    try:
+        extraction_raw = await generate_text(
+            system_prompt=PLAN_EXTRACT_SYSTEM_PROMPT,
+            user_prompt=payload.plan_text,
+            max_output_tokens=300,
+        )
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora AI is temporarily unavailable. Weather data is still available.",
+        )
+
+    try:
+        events = json.loads(extraction_raw)
+        if not isinstance(events, list):
+            raise ValueError("Expected a JSON array")
+    except (json.JSONDecodeError, ValueError):
+        logger.warning("Plan My Day: could not parse AI extraction output: %r", extraction_raw)
+        raise HTTPException(
+            status_code=422,
+            detail="Couldn't understand your plan. Try describing it like 'university at 9am, lunch at 1pm'.",
+        )
+
+    schedule: list[PlanEventResult] = []
+    for event in events[:6]:
+        if not isinstance(event, dict):
+            continue
+        label = str(event.get("label", "")).strip()
+        hour = event.get("hour")
+        if not label or not isinstance(hour, int) or not (0 <= hour <= 23):
+            continue
+
+        index = find_nearest_hour_index(times, hour)
+        if index is None:
+            continue
+
+        score = score_hourly_slot(temps[index], precip[index], wind[index]).overall
+        schedule.append(
+            PlanEventResult(
+                time=times[index],
+                label=label,
+                temperature_c=temps[index],
+                condition_score=score,
+                comfort_label=comfort_label(score),
+            )
+        )
+
+    if not schedule:
+        raise HTTPException(
+            status_code=422,
+            detail="Couldn't match your plan to specific times. Try including times like '9am' or 'evening'.",
+        )
+
+    summary_prompt = (
+        f"City: {location.get('name')}\n"
+        f"Schedule: {[item.model_dump() for item in schedule]}\n\n"
+        f"Write the day overview."
+    )
+
+    try:
+        summary = await generate_text(system_prompt=PLAN_MY_DAY_SYSTEM_PROMPT, user_prompt=summary_prompt)
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora AI is temporarily unavailable. Weather data is still available.",
+        )
+
+    return PlanMyDayResponse(schedule=schedule, summary=summary)

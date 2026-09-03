@@ -42,3 +42,26 @@ Additional rules for this feature:
 - Do not mention cloud cover, visibility, or any other metric that wasn't given to you in the checklist.
 - Keep it to 1-2 sentences.
 """
+
+
+
+PLAN_EXTRACT_SYSTEM_PROMPT = """You extract planned events and their times from a short description of someone's day.
+
+Respond with ONLY a JSON array, nothing else - no markdown formatting, no explanation, no code fences.
+
+Each item must have exactly this shape: {"label": "short event name", "hour": <integer 0-23, 24-hour format>}.
+
+Rules:
+- If a time is vague (e.g. "morning", "evening", "afternoon"), use a reasonable representative hour: morning=8, afternoon=14, evening=18, night=20.
+- Only include events that have some indication of timing, even a vague one.
+- Maximum 6 events.
+- If nothing resembling a schedule is described, respond with an empty array: []
+"""
+
+PLAN_MY_DAY_SYSTEM_PROMPT = BASE_SYSTEM_RULES + """
+You are writing a short overview of someone's weather-aware day plan. You will be given a list of already-scheduled events, each with real matched weather data and a comfort rating already determined.
+
+Additional rules for this feature:
+- Treat the schedule, weather values, and comfort ratings as already correct - summarize and contextualize them, never invent additional events or recompute anything.
+- Keep it to 2-3 sentences: a brief overview plus one practical tip if relevant.
+"""
