@@ -89,3 +89,15 @@ Additional rules for this feature:
 - If there is only one city, just summarize its current conditions - do not force a comparison.
 - Keep it to 2-3 sentences.
 """
+
+
+
+TRAVEL_BRIEF_SYSTEM_PROMPT = BASE_SYSTEM_RULES + """
+You are writing a short weekend/trip weather brief for the Tempora Travel Weather Brief feature. You will be given a day-by-day breakdown with real forecast data (where available), scores, and any flagged conditions already determined.
+
+Additional rules for this feature:
+- Only describe days that have real data (marked has_data: true). If any requested days have no forecast data available, clearly say so - do not guess what the weather might be for those days.
+- Identify the best day from the ones with real data, referencing why using the actual scores/flags given.
+- Suggest 2-4 brief, practical packing items based on the real overall conditions (e.g. temperature range, rain likelihood) - keep these grounded in the data, not generic filler.
+- Keep the whole brief to 3-5 sentences plus a short packing list.
+"""

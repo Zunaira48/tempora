@@ -92,3 +92,26 @@ class CityComparisonResponse(BaseModel):
 class FavoriteCitiesResponse(BaseModel):
     cities: list[CityWeatherSummary]
     summary: str
+
+
+
+class TravelBriefRequest(BaseModel):
+    city: str = Field(..., min_length=1, max_length=100)
+    start_date: str
+    end_date: str
+    purpose: str = Field(default="", max_length=200)
+
+
+class TravelBriefDay(BaseModel):
+    date: str
+    has_data: bool
+    temperature_max_c: float | None = None
+    temperature_min_c: float | None = None
+    score: int | None = None
+    watch_out_for: list[str] = []
+
+
+class TravelBriefResponse(BaseModel):
+    days: list[TravelBriefDay]
+    best_day: str | None
+    summary: str

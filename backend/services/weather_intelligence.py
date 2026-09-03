@@ -331,3 +331,15 @@ def comfort_label(score: int) -> str:
     if score >= 40:
         return "Fair"
     return "Uncomfortable"
+
+
+
+def score_daily_slot(temp_max_c: float, temp_min_c: float, precipitation_probability_percent: float, wind_max_kmh: float) -> OutdoorScore:
+    avg_temp = (temp_max_c + temp_min_c) / 2
+    components = {
+        "temperature": temperature_score(avg_temp),
+        "precipitation": precipitation_score(precipitation_probability_percent),
+        "wind": wind_score(wind_max_kmh),
+    }
+    overall = round(sum(components.values()) / len(components))
+    return OutdoorScore(overall=overall, components=components)

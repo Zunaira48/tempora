@@ -32,6 +32,10 @@ import asyncio
 
 from services.ai.prompts import CITY_COMPARISON_SYSTEM_PROMPT
 from services.ai.prompts import FAVORITE_CITIES_SYSTEM_PROMPT
+from datetime import date as date_type, timedelta
+from services.weather_service import fetch_extended_daily_forecast
+from services.weather_intelligence import score_daily_slot, detect_condition_flags
+from services.ai.prompts import TRAVEL_BRIEF_SYSTEM_PROMPT
 from services.ai.schemas import (
     ActivityAdvisorRequest,
     ActivityAdvisorResponse,
@@ -42,6 +46,9 @@ from services.ai.schemas import (
     CityComparisonResponse,
     CityWeatherSummary,
     FavoriteCitiesResponse,
+    TravelBriefRequest,
+    TravelBriefResponse,
+    TravelBriefDay,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -429,3 +436,98 @@ async def favorite_cities_today(
         )
 
     return FavoriteCitiesResponse(cities=summaries, summary=summary_text)
+
+
+
+@router.post("/travel-brief", response_model=TravelBriefResponse)
+async def travel_brief(
+    payload: TravelBriefRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        start = date_type.fromisoformat(payload.start_date)
+        end = date_type.fromisoformat(payload.end_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Dates must be in YYYY-MM-DD format")
+
+    if end < start:
+        raise HTTPException(status_code=400, detail="End date must be on or after the start date")
+
+    if (end - start).days > 9:
+        raise HTTPException(status_code=400, detail="Trip range is limited to 10 days")
+
+    try:
+        check_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    try:
+        location = await resolve_city(payload.city)
+    except CityNotFoundError:
+        raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+
+    daily = await fetch_extended_daily_forecast(location["latitude"], location["longitude"], location["timezone"])
+    forecast_dates = daily["daily"]["time"]
+    temp_max = daily["daily"]["temperature_2m_max"]
+    temp_min = daily["daily"]["temperature_2m_min"]
+    precip = daily["daily"]["precipitation_probability_max"]
+    wind_max = daily["daily"]["wind_speed_10m_max"]
+
+    requested_dates = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+
+    days: list[TravelBriefDay] = []
+    best_day_date = None
+    best_score = -1
+
+    for requested_date in requested_dates:
+        date_str = requested_date.isoformat()
+        if date_str not in forecast_dates:
+            days.append(TravelBriefDay(date=date_str, has_data=False))
+            continue
+
+        index = forecast_dates.index(date_str)
+        score_result = score_daily_slot(temp_max[index], temp_min[index], precip[index], wind_max[index])
+        avg_temp = (temp_max[index] + temp_min[index]) / 2
+        flags = detect_condition_flags(avg_temp, uv_index=None, aqi=None, wind_speed_kmh=wind_max[index])
+
+        days.append(
+            TravelBriefDay(
+                date=date_str,
+                has_data=True,
+                temperature_max_c=temp_max[index],
+                temperature_min_c=temp_min[index],
+                score=score_result.overall,
+                watch_out_for=[flag["reason"] for flag in flags],
+            )
+        )
+
+        if score_result.overall > best_score:
+            best_score = score_result.overall
+            best_day_date = date_str
+
+    days_with_data = [d for d in days if d.has_data]
+    if not days_with_data:
+        raise HTTPException(
+            status_code=422,
+            detail="No forecast data is available yet for the requested dates. Try dates within the next 16 days.",
+        )
+
+    purpose_line = f"Purpose: {payload.purpose}\n" if payload.purpose else ""
+    user_prompt = (
+        f"City: {location.get('name')}\n"
+        f"{purpose_line}"
+        f"Day-by-day data: {[d.model_dump() for d in days]}\n\n"
+        f"Write the travel brief."
+    )
+
+    try:
+        summary_text = await generate_text(system_prompt=TRAVEL_BRIEF_SYSTEM_PROMPT, user_prompt=user_prompt)
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora AI is temporarily unavailable. Weather data is still available.",
+        )
+
+    return TravelBriefResponse(days=days, best_day=best_day_date, summary=summary_text)

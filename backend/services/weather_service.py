@@ -92,3 +92,24 @@ async def fetch_air_quality(latitude: float, longitude: float) -> dict:
         )
         response.raise_for_status()
         return response.json()
+
+
+
+
+async def fetch_extended_daily_forecast(latitude: float, longitude: float, timezone: str, forecast_days: int = 16) -> dict:
+    """Fetches a longer daily forecast window than the homepage's 5-day
+    view uses, for multi-day trip planning. Open-Meteo's free tier
+    supports up to 16 forecast days."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            FORECAST_URL,
+            params={
+                "latitude": latitude,
+                "longitude": longitude,
+                "daily": "temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_speed_10m_max",
+                "forecast_days": min(forecast_days, 16),
+                "timezone": timezone,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
