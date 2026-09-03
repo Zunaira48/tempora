@@ -330,3 +330,99 @@ planMyDayForm.addEventListener("submit", async (event) => {
     planMyDaySubmit.disabled = false;
   }
 });
+
+
+/* ---------- City Comparison ---------- */
+
+const compareCitiesForm = document.getElementById("compareCitiesForm");
+const compareCityA = document.getElementById("compareCityA");
+const compareCityB = document.getElementById("compareCityB");
+const comparePurpose = document.getElementById("comparePurpose");
+const compareCitiesSubmit = document.getElementById("compareCitiesSubmit");
+const compareCitiesResult = document.getElementById("compareCitiesResult");
+
+function renderCityCard(summary) {
+  const card = document.createElement("div");
+  card.className = "compare-city-card";
+
+  const name = document.createElement("div");
+  name.className = "compare-city-name";
+  name.textContent = `${summary.city}, ${summary.country}`;
+  card.appendChild(name);
+
+  const rows = [
+    `${Math.round(summary.temperature_c)}°C (feels ${Math.round(summary.feels_like_c)}°C)`,
+    `Humidity ${summary.humidity_percent}%`,
+    `Wind ${Math.round(summary.wind_speed_kmh)} km/h`,
+    summary.aqi != null ? `AQI ${summary.aqi}` : "AQI unavailable",
+    summary.uv_index != null ? `UV ${summary.uv_index.toFixed(1)}` : "UV unavailable",
+  ];
+
+  rows.forEach((text) => {
+    const row = document.createElement("div");
+    row.className = "compare-city-stat";
+    row.textContent = text;
+    card.appendChild(row);
+  });
+
+  return card;
+}
+
+compareCitiesForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const cityA = compareCityA.value.trim();
+  const cityB = compareCityB.value.trim();
+
+  if (!cityA || !cityB) {
+    compareCitiesResult.textContent = "Enter both cities to compare.";
+    return;
+  }
+
+  if (!isLoggedIn()) {
+    openAuthModal();
+    return;
+  }
+
+  compareCitiesSubmit.disabled = true;
+  compareCitiesResult.textContent = "Comparing...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/compare-cities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ city_a: cityA, city_b: cityB, purpose: comparePurpose.value.trim() }),
+    });
+
+    if (response.status === 401) {
+      handleAuthExpired();
+      compareCitiesResult.textContent = "Your session expired. Please log in again.";
+      return;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      compareCitiesResult.textContent =
+        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+      return;
+    }
+
+    const data = await response.json();
+    compareCitiesResult.innerHTML = "";
+
+    const grid = document.createElement("div");
+    grid.className = "compare-grid";
+    grid.appendChild(renderCityCard(data.city_a));
+    grid.appendChild(renderCityCard(data.city_b));
+    compareCitiesResult.appendChild(grid);
+
+    const summaryEl = document.createElement("div");
+    summaryEl.className = "compare-summary";
+    summaryEl.textContent = data.summary;
+    compareCitiesResult.appendChild(summaryEl);
+  } catch (error) {
+    compareCitiesResult.textContent = "Couldn't reach Tempora AI. Check your connection and try again.";
+  } finally {
+    compareCitiesSubmit.disabled = false;
+  }
+});

@@ -949,6 +949,67 @@ body {
   color: var(--color-text-secondary);
 }
 
+
+/* ---------- City Comparison ---------- */
+
+.compare-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.compare-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.compare-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.compare-result {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.compare-city-card {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+}
+
+.compare-city-name {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.compare-city-stat {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.compare-summary {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
 @media (max-width: 768px) {
   .tempo-ai-panel {
     left: 0;

@@ -154,6 +154,7 @@
       <button type="button" class="tempo-ai-tab" data-tab="explain">📋 Explain</button>
       <button type="button" class="tempo-ai-tab" data-tab="activities">🏃 Activities</button>
       <button type="button" class="tempo-ai-tab" data-tab="plan">📅 Plan</button>
+      <button type="button" class="tempo-ai-tab" data-tab="compare">⚖️ Compare</button>
     </div>
 
     <div class="tempo-ai-tab-panel" data-tab-panel="chat">
@@ -199,6 +200,16 @@
         <button type="submit" id="planMyDaySubmit" class="tempo-ai-action-button">Plan My Day</button>
       </form>
       <div id="planMyDayResult" class="plan-result"></div>
+    </div>
+
+    <div class="tempo-ai-tab-panel is-hidden" data-tab-panel="compare">
+      <form id="compareCitiesForm" class="compare-form">
+        <input type="text" id="compareCityA" class="compare-input" placeholder="First city" maxlength="100" autocomplete="off" />
+        <input type="text" id="compareCityB" class="compare-input" placeholder="Second city" maxlength="100" autocomplete="off" />
+        <input type="text" id="comparePurpose" class="compare-input" placeholder="Purpose (optional) — e.g. weekend trip" maxlength="200" autocomplete="off" />
+        <button type="submit" id="compareCitiesSubmit" class="tempo-ai-action-button">Compare</button>
+      </form>
+      <div id="compareCitiesResult" class="compare-result"></div>
     </div>
   </div>
 
