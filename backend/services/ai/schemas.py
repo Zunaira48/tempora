@@ -86,3 +86,9 @@ class CityComparisonResponse(BaseModel):
     city_a: CityWeatherSummary
     city_b: CityWeatherSummary
     summary: str
+
+
+
+class FavoriteCitiesResponse(BaseModel):
+    cities: list[CityWeatherSummary]
+    summary: str

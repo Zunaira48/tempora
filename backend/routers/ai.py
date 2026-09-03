@@ -31,6 +31,7 @@ from services.ai.prompts import ACTIVITY_ADVISOR_SYSTEM_PROMPT, PLAN_EXTRACT_SYS
 import asyncio
 
 from services.ai.prompts import CITY_COMPARISON_SYSTEM_PROMPT
+from services.ai.prompts import FAVORITE_CITIES_SYSTEM_PROMPT
 from services.ai.schemas import (
     ActivityAdvisorRequest,
     ActivityAdvisorResponse,
@@ -40,6 +41,7 @@ from services.ai.schemas import (
     CityComparisonRequest,
     CityComparisonResponse,
     CityWeatherSummary,
+    FavoriteCitiesResponse,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -373,3 +375,57 @@ async def compare_cities(
         )
 
     return CityComparisonResponse(city_a=summary_a, city_b=summary_b, summary=summary_text)
+
+
+
+@router.get("/favorite-cities-today", response_model=FavoriteCitiesResponse)
+async def favorite_cities_today(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    favorites = (
+        db.query(models.Favorite)
+        .filter(models.Favorite.user_id == current_user.id)
+        .limit(6)
+        .all()
+    )
+
+    if not favorites:
+        raise HTTPException(status_code=404, detail="You haven't saved any favorite cities yet")
+
+    try:
+        check_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    results = await asyncio.gather(
+        *(_get_city_summary(favorite.city_name) for favorite in favorites),
+        return_exceptions=True,
+    )
+
+    summaries: list[CityWeatherSummary] = []
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("Favorite city weather fetch failed: %s", result)
+            continue
+        _, summary = result
+        summaries.append(summary)
+
+    if not summaries:
+        raise HTTPException(
+            status_code=503,
+            detail="Couldn't load weather for your favorite cities right now. Please try again.",
+        )
+
+    user_prompt = f"Cities: {[s.model_dump() for s in summaries]}\n\nWrite the summary."
+
+    try:
+        summary_text = await generate_text(system_prompt=FAVORITE_CITIES_SYSTEM_PROMPT, user_prompt=user_prompt)
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora AI is temporarily unavailable. Weather data is still available.",
+        )
+
+    return FavoriteCitiesResponse(cities=summaries, summary=summary_text)

@@ -77,3 +77,15 @@ Additional rules for this feature:
 - Give a clear recommendation of which city is more favorable right now, and briefly say why, referencing the actual numbers.
 - Keep it to 2-3 sentences.
 """
+
+
+
+FAVORITE_CITIES_SYSTEM_PROMPT = BASE_SYSTEM_RULES + """
+You are writing a short "Your Cities Today" summary for the Tempora Favorite City Intelligence feature. You will be given real current weather for each of the user's saved favorite cities.
+
+Additional rules for this feature:
+- Only use the exact values given for each city. Never invent or estimate a city's weather.
+- If there is more than one city, identify which one currently offers the most comfortable outdoor conditions overall, and briefly say why using the real numbers.
+- If there is only one city, just summarize its current conditions - do not force a comparison.
+- Keep it to 2-3 sentences.
+"""
