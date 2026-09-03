@@ -84,7 +84,7 @@ copilotForm.addEventListener("submit", async (event) => {
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
       appendCopilotMessage(
-        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.",
+        errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.",
         "error"
       );
       return;
@@ -136,7 +136,7 @@ explainWeatherButton.addEventListener("click", async () => {
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
       explainWeatherResult.textContent =
-        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+        errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.";
       return;
     }
 
@@ -201,7 +201,7 @@ activityButtons.forEach((button) => {
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
         activityResult.textContent =
-          errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+          errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.";
         return;
       }
 
@@ -287,7 +287,7 @@ planMyDayForm.addEventListener("submit", async (event) => {
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
       planMyDayResult.textContent =
-        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+        errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.";
       return;
     }
 
@@ -403,7 +403,7 @@ compareCitiesForm.addEventListener("submit", async (event) => {
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
       compareCitiesResult.textContent =
-        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+        errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.";
       return;
     }
 
@@ -424,5 +424,115 @@ compareCitiesForm.addEventListener("submit", async (event) => {
     compareCitiesResult.textContent = "Couldn't reach Tempora AI. Check your connection and try again.";
   } finally {
     compareCitiesSubmit.disabled = false;
+  }
+});
+
+
+/* ---------- Travel Weather Brief ---------- */
+
+const travelBriefForm = document.getElementById("travelBriefForm");
+const travelStartDate = document.getElementById("travelStartDate");
+const travelEndDate = document.getElementById("travelEndDate");
+const travelPurpose = document.getElementById("travelPurpose");
+const travelBriefSubmit = document.getElementById("travelBriefSubmit");
+const travelBriefResult = document.getElementById("travelBriefResult");
+
+function formatTravelDate(dateString) {
+  return new Date(dateString + "T00:00:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
+
+travelBriefForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!travelStartDate.value || !travelEndDate.value) {
+    travelBriefResult.textContent = "Choose both a start and end date.";
+    return;
+  }
+
+  if (!isLoggedIn()) {
+    openAuthModal();
+    return;
+  }
+
+  if (!currentCityName) {
+    travelBriefResult.textContent = "Search for a city first.";
+    return;
+  }
+
+  travelBriefSubmit.disabled = true;
+  travelBriefResult.textContent = "Building your travel brief...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/travel-brief`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({
+        city: currentCityName,
+        start_date: travelStartDate.value,
+        end_date: travelEndDate.value,
+        purpose: travelPurpose.value.trim(),
+      }),
+    });
+
+    if (response.status === 401) {
+      handleAuthExpired();
+      travelBriefResult.textContent = "Your session expired. Please log in again.";
+      return;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      travelBriefResult.textContent =
+        errorBody?.detail || errorBody?.error || "Tempora AI is temporarily unavailable. Weather data is still available.";
+      return;
+    }
+
+    const data = await response.json();
+    travelBriefResult.innerHTML = "";
+
+    const strip = document.createElement("div");
+    strip.className = "travel-day-strip";
+
+    data.days.forEach((day) => {
+      const card = document.createElement("div");
+      card.className = "travel-day-card";
+      if (!day.has_data) card.classList.add("no-data");
+      if (day.date === data.best_day) card.classList.add("is-best");
+
+      const dateEl = document.createElement("div");
+      dateEl.className = "travel-day-date";
+      dateEl.textContent = formatTravelDate(day.date);
+      card.appendChild(dateEl);
+
+      if (day.has_data) {
+        const temps = document.createElement("div");
+        temps.className = "travel-day-temps";
+        temps.textContent = `${Math.round(day.temperature_max_c)}° / ${Math.round(day.temperature_min_c)}°`;
+        card.appendChild(temps);
+
+        const score = document.createElement("div");
+        score.className = "travel-day-score";
+        score.textContent = `${day.score}/100`;
+        card.appendChild(score);
+      } else {
+        const noData = document.createElement("div");
+        noData.className = "travel-day-nodata";
+        noData.textContent = "No forecast yet";
+        card.appendChild(noData);
+      }
+
+      strip.appendChild(card);
+    });
+
+    travelBriefResult.appendChild(strip);
+
+    const summaryEl = document.createElement("div");
+    summaryEl.className = "travel-summary";
+    summaryEl.textContent = data.summary;
+    travelBriefResult.appendChild(summaryEl);
+  } catch (error) {
+    travelBriefResult.textContent = "Couldn't reach Tempora AI. Check your connection and try again.";
+  } finally {
+    travelBriefSubmit.disabled = false;
   }
 });

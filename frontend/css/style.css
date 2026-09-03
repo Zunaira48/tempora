@@ -1011,6 +1011,86 @@ body {
 }
 
 
+/* ---------- Travel Weather Brief ---------- */
+
+.travel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.travel-date-row {
+  display: flex;
+  gap: 8px;
+}
+
+.travel-date-row .compare-input {
+  flex: 1;
+}
+
+.travel-result {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.travel-day-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+}
+
+.travel-day-card {
+  min-width: 88px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.travel-day-card.is-best {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.travel-day-card.no-data {
+  opacity: 0.5;
+}
+
+.travel-day-date {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.travel-day-temps {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.travel-day-score {
+  font-size: 11px;
+  color: var(--color-accent);
+  margin-top: 2px;
+}
+
+.travel-day-nodata {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.travel-summary {
+  font-style: italic;
+  color: var(--color-text-secondary);
+  white-space: pre-line;
+}
+
 /* ---------- Favorite City Intelligence ---------- */
 
 .favorite-cities-today-button {
