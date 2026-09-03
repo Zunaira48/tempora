@@ -153,6 +153,7 @@
       <button type="button" class="tempo-ai-tab is-active" data-tab="chat">💬 Chat</button>
       <button type="button" class="tempo-ai-tab" data-tab="explain">📋 Explain</button>
       <button type="button" class="tempo-ai-tab" data-tab="activities">🏃 Activities</button>
+      <button type="button" class="tempo-ai-tab" data-tab="plan">📅 Plan</button>
     </div>
 
     <div class="tempo-ai-tab-panel" data-tab-panel="chat">
@@ -184,6 +185,20 @@
         <button type="button" class="activity-btn" data-activity="outdoor_event">💍 Outdoor Event</button>
       </div>
       <div id="activityAdvisorResult" class="activity-result"></div>
+    </div>
+
+    <div class="tempo-ai-tab-panel is-hidden" data-tab-panel="plan">
+      <form id="planMyDayForm" class="plan-form">
+        <textarea
+          id="planMyDayInput"
+          class="plan-textarea"
+          placeholder="Describe your day, e.g. 'University at 9am, lunch at 1pm, exercise in the evening'"
+          maxlength="500"
+          rows="3"
+        ></textarea>
+        <button type="submit" id="planMyDaySubmit" class="tempo-ai-action-button">Plan My Day</button>
+      </form>
+      <div id="planMyDayResult" class="plan-result"></div>
     </div>
   </div>
 

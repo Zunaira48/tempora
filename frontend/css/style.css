@@ -876,6 +876,79 @@ body {
   padding-left: 18px;
 }
 
+
+/* ---------- Plan My Day ---------- */
+
+.plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.plan-textarea {
+  resize: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.plan-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.plan-result {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.plan-event {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-surface-border);
+}
+
+.plan-event:last-of-type {
+  border-bottom: none;
+}
+
+.plan-event-time {
+  font-weight: 700;
+  color: var(--color-accent);
+  min-width: 68px;
+  font-size: 13px;
+}
+
+.plan-event-details {
+  flex: 1;
+}
+
+.plan-event-label {
+  font-weight: 600;
+}
+
+.plan-event-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.plan-summary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-surface-border);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
 @media (max-width: 768px) {
   .tempo-ai-panel {
     left: 0;

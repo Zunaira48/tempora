@@ -236,3 +236,97 @@ activityButtons.forEach((button) => {
     }
   });
 });
+
+
+/* ---------- Plan My Day ---------- */
+
+const planMyDayForm = document.getElementById("planMyDayForm");
+const planMyDayInput = document.getElementById("planMyDayInput");
+const planMyDaySubmit = document.getElementById("planMyDaySubmit");
+const planMyDayResult = document.getElementById("planMyDayResult");
+
+function formatPlanTime(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+planMyDayForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const planText = planMyDayInput.value.trim();
+  if (!planText) {
+    return;
+  }
+
+  if (!isLoggedIn()) {
+    openAuthModal();
+    return;
+  }
+
+  if (!currentCityName) {
+    planMyDayResult.textContent = "Search for a city first.";
+    return;
+  }
+
+  planMyDaySubmit.disabled = true;
+  planMyDayResult.textContent = "Planning your day...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/plan-my-day`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ city: currentCityName, plan_text: planText }),
+    });
+
+    if (response.status === 401) {
+      handleAuthExpired();
+      planMyDayResult.textContent = "Your session expired. Please log in again.";
+      return;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      planMyDayResult.textContent =
+        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+      return;
+    }
+
+    const data = await response.json();
+    planMyDayResult.innerHTML = "";
+
+    data.schedule.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "plan-event";
+
+      const time = document.createElement("div");
+      time.className = "plan-event-time";
+      time.textContent = formatPlanTime(item.time);
+      row.appendChild(time);
+
+      const details = document.createElement("div");
+      details.className = "plan-event-details";
+
+      const label = document.createElement("div");
+      label.className = "plan-event-label";
+      label.textContent = item.label;
+      details.appendChild(label);
+
+      const meta = document.createElement("div");
+      meta.className = "plan-event-meta";
+      meta.textContent = `${Math.round(item.temperature_c)}°C · ${item.comfort_label}`;
+      details.appendChild(meta);
+
+      row.appendChild(details);
+      planMyDayResult.appendChild(row);
+    });
+
+    const summaryEl = document.createElement("div");
+    summaryEl.className = "plan-summary";
+    summaryEl.textContent = data.summary;
+    planMyDayResult.appendChild(summaryEl);
+  } catch (error) {
+    planMyDayResult.textContent = "Couldn't reach Tempora AI. Check your connection and try again.";
+  } finally {
+    planMyDaySubmit.disabled = false;
+  }
+});
