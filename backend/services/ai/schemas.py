@@ -62,3 +62,27 @@ class PlanEventResult(BaseModel):
 class PlanMyDayResponse(BaseModel):
     schedule: list[PlanEventResult]
     summary: str
+
+
+
+class CityComparisonRequest(BaseModel):
+    city_a: str = Field(..., min_length=1, max_length=100)
+    city_b: str = Field(..., min_length=1, max_length=100)
+    purpose: str = Field(default="", max_length=200)
+
+
+class CityWeatherSummary(BaseModel):
+    city: str
+    country: str
+    temperature_c: float
+    feels_like_c: float
+    humidity_percent: int
+    wind_speed_kmh: float
+    aqi: int | None
+    uv_index: float | None
+
+
+class CityComparisonResponse(BaseModel):
+    city_a: CityWeatherSummary
+    city_b: CityWeatherSummary
+    summary: str

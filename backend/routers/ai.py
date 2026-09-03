@@ -28,12 +28,18 @@ from services.weather_intelligence import (
 )
 from services.weather_service import fetch_hourly_forecast
 from services.ai.prompts import ACTIVITY_ADVISOR_SYSTEM_PROMPT, PLAN_EXTRACT_SYSTEM_PROMPT, PLAN_MY_DAY_SYSTEM_PROMPT
+import asyncio
+
+from services.ai.prompts import CITY_COMPARISON_SYSTEM_PROMPT
 from services.ai.schemas import (
     ActivityAdvisorRequest,
     ActivityAdvisorResponse,
     PlanMyDayRequest,
     PlanMyDayResponse,
     PlanEventResult,
+    CityComparisonRequest,
+    CityComparisonResponse,
+    CityWeatherSummary,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -300,3 +306,70 @@ async def plan_my_day(
         )
 
     return PlanMyDayResponse(schedule=schedule, summary=summary)
+
+
+
+async def _get_city_summary(city_name: str) -> tuple[dict, CityWeatherSummary]:
+    location = await resolve_city(city_name)
+    weather = await fetch_current_weather(location["latitude"], location["longitude"], location["timezone"])
+
+    aqi_value = None
+    try:
+        air_quality_raw = await fetch_air_quality(location["latitude"], location["longitude"])
+        aqi_value = air_quality_raw.get("current", {}).get("us_aqi")
+    except Exception:
+        pass
+
+    current = weather.get("current", {})
+    uv_values = weather.get("daily", {}).get("uv_index_max", [])
+
+    summary = CityWeatherSummary(
+        city=location.get("name"),
+        country=location.get("country"),
+        temperature_c=current.get("temperature_2m"),
+        feels_like_c=current.get("apparent_temperature"),
+        humidity_percent=current.get("relative_humidity_2m"),
+        wind_speed_kmh=current.get("wind_speed_10m"),
+        aqi=aqi_value,
+        uv_index=uv_values[0] if uv_values else None,
+    )
+    return location, summary
+
+
+@router.post("/compare-cities", response_model=CityComparisonResponse)
+async def compare_cities(
+    payload: CityComparisonRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        check_rate_limit(current_user.id)
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    try:
+        (_, summary_a), (_, summary_b) = await asyncio.gather(
+            _get_city_summary(payload.city_a),
+            _get_city_summary(payload.city_b),
+        )
+    except CityNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc) or "One of the cities could not be found")
+
+    purpose_line = f"Purpose: {payload.purpose}\n" if payload.purpose else ""
+    user_prompt = (
+        f"{purpose_line}"
+        f"City A - {summary_a.city}, {summary_a.country}: {summary_a.model_dump()}\n"
+        f"City B - {summary_b.city}, {summary_b.country}: {summary_b.model_dump()}\n\n"
+        f"Write the comparison."
+    )
+
+    try:
+        summary_text = await generate_text(system_prompt=CITY_COMPARISON_SYSTEM_PROMPT, user_prompt=user_prompt)
+    except AIProviderError as exc:
+        logger.warning("AI provider error: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Tempora AI is temporarily unavailable. Weather data is still available.",
+        )
+
+    return CityComparisonResponse(city_a=summary_a, city_b=summary_b, summary=summary_text)
