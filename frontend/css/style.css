@@ -1010,6 +1010,43 @@ body {
   color: var(--color-text-secondary);
 }
 
+
+/* ---------- Favorite City Intelligence ---------- */
+
+.favorite-cities-today-button {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.favorite-cities-today-button:hover {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.favorite-cities-today-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.favorite-cities-today-result {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.favorite-cities-today-result:empty {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .tempo-ai-panel {
     left: 0;

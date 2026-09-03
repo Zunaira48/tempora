@@ -165,6 +165,11 @@ function renderFavoriteSearches() {
     });
     favoriteSearchesContainer.appendChild(chip);
   });
+
+  favoriteCitiesTodayButton.hidden = currentFavorites.length === 0;
+  if (currentFavorites.length === 0) {
+    favoriteCitiesTodayResult.textContent = "";
+  }
 }
 
 function findFavorite(city) {
@@ -384,4 +389,46 @@ function formatDayLabel(dateString) {
 
 document.querySelectorAll(".unit-option").forEach((option) => {
   option.classList.toggle("is-active", option.dataset.unit === currentUnit);
+});
+
+
+/* ---------- Favorite City Intelligence ---------- */
+
+const favoriteCitiesTodayButton = document.getElementById("favoriteCitiesTodayButton");
+const favoriteCitiesTodayResult = document.getElementById("favoriteCitiesTodayResult");
+
+favoriteCitiesTodayButton.addEventListener("click", async () => {
+  if (!isLoggedIn()) {
+    openAuthModal();
+    return;
+  }
+
+  favoriteCitiesTodayButton.disabled = true;
+  favoriteCitiesTodayResult.textContent = "Checking your cities...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/favorite-cities-today`, {
+      headers: authHeaders(),
+    });
+
+    if (response.status === 401) {
+      handleAuthExpired();
+      favoriteCitiesTodayResult.textContent = "Your session expired. Please log in again.";
+      return;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      favoriteCitiesTodayResult.textContent =
+        errorBody?.detail || "Tempora AI is temporarily unavailable. Weather data is still available.";
+      return;
+    }
+
+    const data = await response.json();
+    favoriteCitiesTodayResult.textContent = data.summary;
+  } catch (error) {
+    favoriteCitiesTodayResult.textContent = "Couldn't reach Tempora AI. Check your connection and try again.";
+  } finally {
+    favoriteCitiesTodayButton.disabled = false;
+  }
 });
