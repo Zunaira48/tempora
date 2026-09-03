@@ -28,3 +28,18 @@ class ExplainWeatherResponse(BaseModel):
     summary: str
     score: int
     score_components: dict[str, int]
+
+
+
+class ActivityAdvisorRequest(BaseModel):
+    city: str = Field(..., min_length=1, max_length=100)
+    activity: str
+
+
+class ActivityAdvisorResponse(BaseModel):
+    activity_label: str
+    best_window_start: str
+    best_window_end: str
+    score: int
+    reasons: list[str]
+    summary: str

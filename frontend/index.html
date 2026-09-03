@@ -151,6 +151,30 @@
   </button>
   <div id="explainWeatherResult" class="explain-weather-result" hidden></div>
 
+  <button type="button" id="activityAdvisorToggle" class="activity-toggle">🏃 Activities</button>
+
+  <div id="activityAdvisorPanel" class="activity-panel" role="dialog" aria-modal="false" aria-labelledby="activityPanelTitle" hidden>
+    <div class="copilot-header">
+      <h2 id="activityPanelTitle">Activity Advisor</h2>
+      <button type="button" id="activityAdvisorClose" class="modal-close" aria-label="Close Activity Advisor">✕</button>
+    </div>
+
+    <div class="activity-grid">
+      <button type="button" class="activity-btn" data-activity="running">🏃 Running</button>
+      <button type="button" class="activity-btn" data-activity="walking">🚶 Walking</button>
+      <button type="button" class="activity-btn" data-activity="cycling">🚴 Cycling</button>
+      <button type="button" class="activity-btn" data-activity="beach">🏖 Beach</button>
+      <button type="button" class="activity-btn" data-activity="photography">📸 Photography</button>
+      <button type="button" class="activity-btn" data-activity="picnic">🧺 Picnic</button>
+      <button type="button" class="activity-btn" data-activity="hiking">🌳 Hiking</button>
+      <button type="button" class="activity-btn" data-activity="travel">✈️ Travel</button>
+      <button type="button" class="activity-btn" data-activity="university">🎓 University</button>
+      <button type="button" class="activity-btn" data-activity="outdoor_event">💍 Outdoor Event</button>
+    </div>
+
+    <div id="activityAdvisorResult" class="activity-result"></div>
+  </div>
+
   <div id="copilotToggle" class="copilot-toggle" role="button" tabindex="0" aria-label="Open Tempora Copilot">
     ✨
   </div>
@@ -182,5 +206,6 @@
   <script src="js/app.js"></script>
   <script src="js/copilot.js"></script>
   <script src="js/explain-weather.js"></script>
+  <script src="js/activity-advisor.js"></script>
 </body>
 </html>
