@@ -8,4 +8,4 @@ const isLocalDev = ["127.0.0.1", "localhost"].includes(window.location.hostname)
 
 const API_BASE_URL = isLocalDev
   ? "http://127.0.0.1:8000"
-  : (window.TEMPORA_API_BASE_URL || "https://YOUR-RENDER-URL.onrender.com");
+  : (window.TEMPORA_API_BASE_URL || "https://tempora-api.onrender.com");
