@@ -26,6 +26,7 @@ from services.weather_service import (
     fetch_hourly_forecast,
     fetch_air_quality,
     CityNotFoundError,
+    WeatherProviderError,
 )
 from services.weather_codes import describe_condition
 from routers.auth import router as auth_router
@@ -83,10 +84,17 @@ async def get_weather(city: str = Query(..., min_length=1)):
     except CityNotFoundError:
         logger.info("City not found: %r", city)
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    raw = await fetch_current_weather(
-        location["latitude"], location["longitude"], location["timezone"]
-    )
+    try:
+        raw = await fetch_current_weather(
+            location["latitude"], location["longitude"], location["timezone"]
+        )
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
     current = raw["current"]
     daily = raw["daily"]
     condition_text, condition_icon = describe_condition(current["weather_code"])
@@ -127,10 +135,17 @@ async def get_forecast(city: str = Query(..., min_length=1)):
         location = await resolve_city(city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    raw = await fetch_forecast(
-        location["latitude"], location["longitude"], location["timezone"]
-    )
+    try:
+        raw = await fetch_forecast(
+            location["latitude"], location["longitude"], location["timezone"]
+        )
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
     daily = raw["daily"]
 
     days = []
@@ -161,10 +176,17 @@ async def get_hourly(city: str = Query(..., min_length=1)):
         location = await resolve_city(city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    raw = await fetch_hourly_forecast(
-        location["latitude"], location["longitude"], location["timezone"]
-    )
+    try:
+        raw = await fetch_hourly_forecast(
+            location["latitude"], location["longitude"], location["timezone"]
+        )
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
     hourly = raw["hourly"]
 
     hours = []
