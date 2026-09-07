@@ -1,223 +1,107 @@
 # Tempora — AI Weather Intelligence Platform
 
-Tempora doesn't just tell you what the weather is — it helps you understand what it means for your day. It combines live weather data with a deterministic scoring engine and Google Gemini to answer questions like *"Should I go for a run?"*, *"Which of my saved cities is nicest today?"*, and *"Is this weekend good for a trip?"* — grounded entirely in real data, never invented.
+Live: **https://tempora-indol.vercel.app**
+API: **https://tempora-api.onrender.com**
 
-**Live demo:** https://tempora-indol.vercel.app
-**API:** https://tempora-api.onrender.com
-**Backend repo root:** `backend/` · **Frontend repo root:** `frontend/`
+![Tempora dashboard](docs/screenshots/desktop-dashboard.png)
 
-![Tempora desktop dashboard](docs/screenshots/desktop-dashboard.png)
+Tempora started as a normal weather app — search a city, see the forecast, save your favorites. What makes it more than that is the AI layer on top: instead of just showing you numbers, it can tell you whether now's a good time to go for a run, help you plan your day around the forecast, or compare two cities before a weekend trip. The AI never makes those calls on its own, though — every score and recommendation comes from a deterministic scoring engine I built first, and Gemini's job is only ever to explain what that engine already decided, in plain language.
 
----
+I built this to go deeper than a typical portfolio CRUD app: real auth, a Postgres database in production, a proper deployment pipeline, and an AI integration that's actually grounded in real data instead of just wrapping a chatbot around an API call.
 
-## Table of Contents
+## What it does
 
-- [The Problem](#the-problem)
-- [The Solution](#the-solution)
-- [Features](#features)
-- [AI Features](#ai-features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Weather Data](#weather-data)
-- [Authentication & Authorization](#authentication--authorization)
-- [Database](#database)
-- [AI Architecture & Safety](#ai-architecture--safety)
-- [Security](#security)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Environment Variables](#environment-variables)
-- [Local Development](#local-development)
-- [Screenshots](#screenshots)
-- [Known Limitations](#known-limitations)
-- [Roadmap](#roadmap)
-- [Author](#author)
+The core app is a fairly complete weather dashboard — current conditions, an hourly strip, a 5-day forecast, UV and air quality, unit toggling, light/dark themes. If you sign up, you can save favorite cities and it remembers your recent searches. Nothing unusual there, but it's solid: tested down to 375px-wide phones, keyboard-accessible modals, and it handles failure states honestly instead of just breaking.
 
----
+The interesting part is the **Tempora AI** panel, which sits behind one button next to the weather card and opens into six tabs:
 
-## The Problem
+- **Chat** — ask it anything about the current city's weather. It re-fetches live data before answering, so it's never working off stale numbers.
+- **Explain** — a plain-language read on current conditions, shown next to the actual 0–100 suitability score it's describing.
+- **Activities** — pick from ten activities (running, beach, photography, university, and so on) and it finds the best time window today, each with its own comfort profile. This one actually caught a real bug during testing — it was originally happy to recommend a 3am picnic because the weather math looked good then, so I added a time-of-day constraint on top of the scoring.
+- **Plan** — describe your day in your own words ("uni at 9, lunch at 1, gym in the evening") and it pulls out the events, matches each one to real hourly weather, and rates how comfortable each will be.
+- **Compare** — put two cities side by side, optionally with a purpose ("weekend trip"), and it'll tell you which one's actually better right now.
+- **Travel** — a multi-day trip brief with a recommended best day and packing suggestions. If you ask about dates further out than Open-Meteo's forecast actually covers, it says so plainly instead of guessing at future weather.
 
-Most weather apps stop at numbers: temperature, humidity, a forecast grid. They leave the actual decision — *is this good weather for what I'm planning?* — entirely to the user. That gap is where Tempora lives.
+There's a seventh one too — a "Your Cities Today" button in the sidebar next to your favorites, which gives you a one-line AI comparison across everywhere you've saved.
 
-## The Solution
+## Why the AI never invents numbers
 
-Tempora pairs real weather data with a **deterministic suitability-scoring engine** (temperature, precipitation, wind, UV, and air quality, each scored transparently against activity-specific comfort ranges) and layers **Google Gemini** on top purely to *explain* those scores in plain language. The AI never invents a number — it only ever narrates values the backend has already computed from real Open-Meteo data.
-
-## Features
-
-**Core weather**
-- Current conditions, 24-hour hourly strip, 5-day forecast
-- UV Index and Air Quality Index (US AQI), with graceful degradation if AQI is temporarily unavailable
-- °C/°F toggle, light/dark theme
-- City search with recent-search history and favorites (authenticated)
-
-**Accounts**
-- Email/password registration and login (JWT, bcrypt-hashed passwords)
-- Per-user favorites and recent searches, fully isolated between accounts
-- Session expiry handled gracefully — an expired or invalid token prompts re-login instead of silently failing
-
-**Responsive & accessible**
-- Tested at 375px, 390px, 768px, and 1024px+ breakpoints
-- Auth modal has a full keyboard focus trap, `Escape`-to-close, and `aria-live` error announcements
-
-## AI Features
-
-All AI features live behind a single **🤖 Tempora AI** panel, opened from the weather card, with six tabs:
-
-| Tab | What it does |
-|---|---|
-| 💬 **Chat** | Ask any question about the current city's weather; answers are grounded in live, re-fetched data — never the client's cached numbers |
-| 📋 **Explain** | Plain-language summary of current conditions, alongside the deterministic 0–100 Outdoor Suitability score it's explaining |
-| 🏃 **Activities** | Pick from 10 activities (running, beach, photography, university, etc.); each has its own comfort profile and realistic time-of-day window, so a "best time" is never suggested outside hours the activity would actually happen |
-| 📅 **Plan** | Describe your day in free text ("uni at 9, lunch at 1, gym in the evening") — Gemini extracts the events, then real hourly weather is matched to each one deterministically |
-| ⚖️ **Compare** | Side-by-side live comparison of two cities, with an optional purpose (e.g. "weekend trip") the AI weighs the recommendation against |
-| 📆 **Travel** | Multi-day trip brief with a best-day recommendation and packing suggestions. If requested dates fall outside Open-Meteo's forecast range, Tempora says so plainly rather than fabricating future weather |
-
-A seventh capability, **📍 Your Cities Today**, lives in the sidebar next to Favorites — a one-click AI summary comparing conditions across all of a user's saved cities.
+This was the thing I cared most about getting right. Every AI feature follows the same rule: the backend computes real numbers first — a suitability score, a best time window, a comparison — using plain deterministic Python, and Gemini is only ever handed those numbers and asked to explain them in a sentence or two. It's told explicitly, in every prompt, to say when something wasn't provided rather than make it up, and I tested that directly — asking for a trip two months out returns an honest "no forecast data available" instead of the model hallucinating a forecast for a date nobody can actually predict yet.
 
 ## Architecture
 
 ```
-Browser (Vercel, static HTML/CSS/JS)
+Browser (Vercel, plain HTML/CSS/JS — no framework)
         │
         ▼
 FastAPI (Render)
-        │
-        ├──▶ SQLAlchemy ──▶ PostgreSQL (Neon, serverless)
-        │
-        ├──▶ httpx ──▶ Open-Meteo (geocoding, forecast, air quality)
-        │
-        └──▶ Weather Intelligence Engine (pure Python, deterministic scoring)
-                    │
-                    ▼
-              Gemini API (narration only — never computes scores itself)
+   ├── SQLAlchemy → PostgreSQL (Neon)
+   ├── httpx → Open-Meteo (weather, geocoding, air quality)
+   └── Weather scoring engine (pure Python) → Gemini (explains the score, never computes it)
 ```
 
-## Tech Stack
+More detail on how each piece fits together, including a few of the trickier bugs I ran into, is in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**Backend:** FastAPI · SQLAlchemy 2.0 · PostgreSQL via `psycopg` 3 · `python-jose` (JWT) · `passlib`/bcrypt · `httpx` · `pytest` + `pytest-asyncio`
+## Stack
 
-**Frontend:** Vanilla HTML/CSS/JavaScript, no framework or build step — CSS custom properties drive the entire theme (including light/dark mode) from a single set of variables
+**Backend** — FastAPI, SQLAlchemy 2.0, PostgreSQL via `psycopg`, JWT auth (`python-jose`), bcrypt password hashing, `httpx`, `pytest`.
 
-**AI:** Google Gemini API, called directly over REST (no SDK dependency), model configurable via an environment variable rather than hardcoded
+**Frontend** — vanilla HTML/CSS/JS. No React, no build step. The whole color theme runs off a handful of CSS custom properties, so switching the palette is a one-file edit.
 
-**Infrastructure:** Neon (Postgres) · Render (API) · Vercel (static frontend)
+**AI** — Google Gemini, called directly over REST rather than through the SDK, with the model name kept in an environment variable so swapping it doesn't touch any feature code. That flexibility turned out to matter — I hit a couple of real, current Gemini quirks while building this (see below).
 
-## Weather Data
+**Hosting** — Vercel for the frontend, Render for the API, Neon for Postgres.
 
-All weather data comes from [Open-Meteo](https://open-meteo.com/), a free, no-API-key weather service:
-- Geocoding for city search
-- Current conditions + daily UV
-- 5-day and 48-hour hourly forecasts
-- Air quality (US AQI)
+## A couple of things I actually ran into
 
-Every numerical claim the AI makes is sourced from one of these calls — nothing is estimated or interpolated by the language model.
+Worth mentioning because they weren't obvious going in:
 
-## Authentication & Authorization
+- Gemini's newer API keys (the `AQ.`-prefixed "Auth key" format) need to be sent as an `x-goog-api-key` header, not the old `?key=` query parameter most tutorials still show.
+- Gemini 3.x models spend part of their output token budget on internal "thinking" before writing anything visible, which silently truncated my first few responses until I explicitly set `thinkingLevel: "minimal"` for these short, factual answers.
+- Different Gemini model tiers have very different free daily quotas — I found this out the hard way mid-build (20 requests/day on `gemini-3.6-flash` vs. much more headroom on the `-lite` variant), which is why the model is configurable rather than hardcoded.
+- Neon's Postgres suspends itself when idle, which silently killed pooled connections until I added `pool_pre_ping=True` to the SQLAlchemy engine.
 
-JWT Bearer tokens, stored client-side and attached via `Authorization` headers. Passwords are hashed with bcrypt; tokens expire after 24 hours.
+## Auth
 
-**Why not HttpOnly cookies?** Considered and deliberately not used: Tempora's frontend is a static SPA with no server-rendered pages and no unsanitized HTML injection points, so its practical XSS surface is low — while cross-origin cookies (Vercel ↔ Render are different domains) would require `SameSite=None` and reintroduce CSRF as a new, separate risk to defend against. Bearer-token auth was the better fit for this specific deployment shape.
+Email/password, JWT stored client-side, bcrypt for hashing, 24-hour token expiry. I went back and forth on whether to use HttpOnly cookies instead — they'd close off the XSS-token-theft angle — but decided against it here: the frontend and backend live on different domains (Vercel and Render), so cookies would need `SameSite=None`, which reopens CSRF as a new problem to solve, and the app itself doesn't render any unsanitized user input that would make XSS a realistic risk in the first place. Bearer tokens felt like the more honest trade-off for this specific setup.
 
-Every authenticated query is scoped to `current_user.id` at the database layer — verified both manually (two real accounts, live cross-checking) and via automated tests (see [Testing](#testing)).
-
-## Database
-
-PostgreSQL, hosted on Neon (serverless — scales to zero when idle). Three tables: `users`, `favorites`, `recent_searches`, related by foreign key with cascading deletes. The connection uses `pool_pre_ping=True` specifically to handle Neon's automatic suspend/resume behavior transparently.
-
-## AI Architecture & Safety
-
-- **Provider abstraction** (`services/ai/provider.py`): a thin REST wrapper around Gemini, isolated so switching providers later doesn't touch any feature code
-- **Context builder**: sends only the minimal, real weather fields a given feature needs — never a raw data dump
-- **Rate limiting**: per-user per-minute cap plus a shared global daily cap, sized against Gemini's actual free-tier quota
-- **Prompt rules enforced on every feature**: never invent a value not explicitly provided; state plainly when data is unavailable rather than guessing; no medical/safety authority claims
-- **AI never computes** — activity scores, suitability ratings, and "best day" selections are all plain deterministic Python; the model only narrates results it's handed
-
-## Security
-
-- Bcrypt password hashing, JWT expiry, per-user data isolation (see Testing)
-- CORS allowlist (no wildcard), configured per environment via `CORS_ORIGINS`
-- Global error handling: unhandled exceptions are logged in full server-side but only ever return a generic, safe message to the client — full tracebacks never reach the browser
-- AI output is inserted into the DOM via `textContent`/`createElement`, never `innerHTML` — even though prompt rules constrain the model's output, it's still treated as untrusted
-- No secrets committed at any point (verified before every commit throughout development)
+Every query that touches a user's favorites or recent searches is scoped to that user's ID — I checked this three separate ways over the course of building it: manually with two real accounts, and later with automated tests that specifically assert one account's data never shows up in another's response.
 
 ## Testing
 
-17 automated backend tests (`pytest`) covering the AI layer specifically:
-- Every AI endpoint rejects unauthenticated and invalid-token requests
-- Input validation (empty messages, unknown activities/cities, malformed or illogical date ranges, oversized inputs)
-- **User isolation, proven programmatically**: two independent test accounts, asserting one user's favorite-city data never appears in another's AI-generated summary
+There's a `pytest` suite covering the AI endpoints specifically — authentication, input validation, and (the one I actually cared about) user isolation. It mocks the Gemini call rather than hitting the real API, partly for speed and partly because the free-tier quota is thin enough that a test suite calling it for real would burn through it fast. Currently 17 tests, all passing, running in about a minute.
 
-The real Gemini API is mocked in tests — this verifies Tempora's own logic (auth, validation, isolation) deterministically, without depending on or spending quota against a live third-party service.
-
-```
-17 passed in ~75s
-```
-
-## Deployment
-
-| Layer | Provider | Notes |
-|---|---|---|
-| Frontend | Vercel | Static hosting, root directory `frontend/` |
-| Backend | Render | Free-tier web service, root directory `backend/`, binds to Render's `$PORT` |
-| Database | Neon | Serverless Postgres, `pool_pre_ping` enabled for cold-start resilience |
-
-## Environment Variables
-
-**Backend (`backend/.env`)**
-```
-DATABASE_URL=postgresql+psycopg://user:password@host/dbname?sslmode=require
-JWT_SECRET=<random secret, e.g. python -c "import secrets; print(secrets.token_hex(32))">
-GEMINI_API_KEY=<your Gemini API key>
-AI_MODEL=gemini-3.5-flash-lite
-CORS_ORIGINS=http://127.0.0.1:5500,https://your-vercel-domain.vercel.app
-```
-
-Frontend requires no environment variables — its API base URL is resolved in `frontend/js/config.js`, auto-detecting local development vs. production.
-
-## Local Development
+## Running it locally
 
 ```powershell
-# Backend
 cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 uvicorn main:app --reload
-
-# Frontend
-# Serve frontend/ with any static server, e.g. VS Code Live Server
 ```
 
-Run tests:
-```powershell
-cd backend
-pytest tests/ -v
-```
+Serve `frontend/` with anything static (Live Server works fine). You'll need a `.env` in `backend/` — see `.env.example` for what it needs: a Postgres URL, a JWT secret, and a Gemini API key.
+
+Run the tests with `pytest tests/ -v` from `backend/`.
+
+## What's not finished
+
+Being honest about what's still rough:
+
+- Open-Meteo rate-limits per IP, and Render's free tier shares IPs across a lot of unrelated apps — so weather fetches can occasionally 503 for reasons that have nothing to do with Tempora itself. It fails cleanly when this happens rather than crashing, but it's a real limitation of stacking free-tier services on top of each other.
+- City search takes the first geocoding match, so a city name that's shared by multiple places (there's no disambiguation UI) will sometimes resolve somewhere you didn't mean.
+- No refresh tokens — sessions just expire after 24 hours and you log back in. Deliberate, to keep the token-theft window short without building out refresh infrastructure for a project this size.
+- The weather intelligence engine already computes threshold-based alerts internally (high UV, poor air quality, and so on) but I haven't wired that up to an actual "alerts" feature yet — it's on the list.
 
 ## Screenshots
 
 | | |
 |---|---|
-| ![Desktop dashboard](docs/screenshots/desktop-dashboard.png) | ![Mobile dashboard](docs/screenshots/mobile-dashboard.png) |
-| Desktop — Twilight theme | Mobile — responsive layout |
-| ![Tempora AI - Chat](docs/screenshots/tempora-ai-chat.png) | ![Tempora AI - Activities](docs/screenshots/tempora-ai-activities.png) |
-| Weather Copilot chat | Activity Advisor |
-| ![Tempora AI - Travel Brief](docs/screenshots/tempora-ai-travel.png) | ![Favorite City Intelligence](docs/screenshots/favorite-cities-today.png) |
-| Multi-day travel brief | Favorite City Intelligence |
+| ![Desktop](docs/screenshots/desktop-dashboard.png) | ![Mobile](docs/screenshots/mobile-dashboard.png) |
+| ![Chat](docs/screenshots/tempora-ai-chat.png) | ![Activities](docs/screenshots/tempora-ai-activities.png) |
+| ![Travel brief](docs/screenshots/tempora-ai-travel.png) | ![Favorite cities](docs/screenshots/favorite-cities-today.png) |
 
-## Known Limitations
+---
 
-- **Open-Meteo's per-IP rate limit** can occasionally cause temporary weather-fetch failures on shared free-tier hosting (Render's IP pool is shared across many unrelated apps). Tempora degrades gracefully — a clean, honest error message, never a crash — but this is a real constraint of the free-tier hosting stack, not something the app can fully control.
-- **Gemini's free-tier daily quota varies by model generation** — confirmed directly against the live API during development, not assumed from documentation. Lighter model variants (`-flash-lite`) currently offer meaningfully more daily headroom than the full Flash model.
-- Geocoding takes the first match only; ambiguous city names (e.g. common names shared across countries) aren't disambiguated in the UI.
-- Sessions expire after 24 hours with no refresh-token mechanism — by design, to bound token-theft exposure on a portfolio-scale project without adding refresh-token infrastructure.
-
-## Roadmap
-
-- Weather alert explainer using deterministic threshold detection (already built in the scoring engine, not yet exposed as a feature)
-- City name disambiguation in search
-- Optional HttpOnly-cookie auth mode if the app's trust boundary changes
-
-## Author
-
-Built by Zunaira Zahid — a full-stack, AI-integrated weather intelligence platform combining FastAPI, PostgreSQL, deterministic scoring, and the Gemini API, deployed on Vercel, Render, and Neon.
+Built by Zunaira Zahid.
