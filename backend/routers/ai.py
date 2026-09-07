@@ -8,7 +8,7 @@ logger = logging.getLogger("tempora")
 import models
 from auth.dependencies import get_current_user
 from database import get_db
-from services.weather_service import resolve_city, fetch_current_weather, fetch_air_quality, CityNotFoundError
+from services.weather_service import resolve_city, fetch_current_weather, fetch_air_quality, CityNotFoundError, WeatherProviderError
 from services.ai.context import build_current_context
 from services.ai.prompts import COPILOT_SYSTEM_PROMPT
 from services.ai.provider import generate_text, AIProviderError
@@ -69,10 +69,17 @@ async def ask_copilot(
         location = await resolve_city(payload.city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    current_weather = await fetch_current_weather(
-        location["latitude"], location["longitude"], location["timezone"]
-    )
+    try:
+        current_weather = await fetch_current_weather(
+            location["latitude"], location["longitude"], location["timezone"]
+        )
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
     aqi_value = None
     try:
@@ -116,10 +123,17 @@ async def explain_weather(
         location = await resolve_city(payload.city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    current_weather = await fetch_current_weather(
-        location["latitude"], location["longitude"], location["timezone"]
-    )
+    try:
+        current_weather = await fetch_current_weather(
+            location["latitude"], location["longitude"], location["timezone"]
+        )
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
     aqi_value = None
     try:
@@ -181,8 +195,15 @@ async def activity_advisor(
         location = await resolve_city(payload.city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    hourly = await fetch_hourly_forecast(location["latitude"], location["longitude"], location["timezone"])
+    try:
+        hourly = await fetch_hourly_forecast(location["latitude"], location["longitude"], location["timezone"])
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
     window = find_best_activity_window(hourly["hourly"], payload.activity)
     if window is None:
@@ -238,8 +259,16 @@ async def plan_my_day(
         location = await resolve_city(payload.city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    hourly = await fetch_hourly_forecast(location["latitude"], location["longitude"], location["timezone"])
+    try:
+        hourly = await fetch_hourly_forecast(location["latitude"], location["longitude"], location["timezone"])
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
+
     times = hourly["hourly"]["time"]
     temps = hourly["hourly"]["apparent_temperature"]
     precip = hourly["hourly"]["precipitation_probability"]
@@ -363,6 +392,9 @@ async def compare_cities(
         )
     except CityNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc) or "One of the cities could not be found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
     purpose_line = f"Purpose: {payload.purpose}\n" if payload.purpose else ""
     user_prompt = (
@@ -466,8 +498,15 @@ async def travel_brief(
         location = await resolve_city(payload.city)
     except CityNotFoundError:
         raise HTTPException(status_code=404, detail=f"City '{payload.city}' not found")
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
 
-    daily = await fetch_extended_daily_forecast(location["latitude"], location["longitude"], location["timezone"])
+    try:
+        daily = await fetch_extended_daily_forecast(location["latitude"], location["longitude"], location["timezone"])
+    except WeatherProviderError as exc:
+        logger.warning("Weather provider error: %s", exc)
+        raise HTTPException(status_code=503, detail="Weather data is temporarily unavailable. Please try again shortly.")
     forecast_dates = daily["daily"]["time"]
     temp_max = daily["daily"]["temperature_2m_max"]
     temp_min = daily["daily"]["temperature_2m_min"]
